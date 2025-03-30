@@ -3,7 +3,9 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const errorMessage = `${res.status}: ${text}`;
+    console.error("API Error:", errorMessage, "URL:", res.url);
+    throw new Error(errorMessage);
   }
 }
 
@@ -13,7 +15,7 @@ async function throwIfResNotOk(res: Response) {
  * In production on Netlify, API calls go to /.netlify/functions/api-standalone
  */
 function getApiUrl(path: string): string {
-  // Make sure path starts with a slash and remove any leading 'api'
+  // Make sure path starts with a slash
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
   // If running in a browser and we're in production
@@ -22,6 +24,7 @@ function getApiUrl(path: string): string {
     
     // For API paths, remap to Netlify Functions path
     if (normalizedPath.startsWith('/api/')) {
+      console.log(`Redirecting ${normalizedPath} to Netlify function`);
       // Change /api/something to /.netlify/functions/api-standalone/something
       return `${baseUrl}/.netlify/functions/api-standalone${normalizedPath.substring(4)}`;
     }
@@ -30,6 +33,7 @@ function getApiUrl(path: string): string {
     return `${baseUrl}${normalizedPath}`;
   }
   
+  console.log(`Using direct path for development: ${normalizedPath}`);
   // In development mode, just use the path directly
   return normalizedPath;
 }
@@ -41,15 +45,27 @@ export async function apiRequest(
 ): Promise<Response> {
   const apiUrl = getApiUrl(url);
   
-  const res = await fetch(apiUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  console.log(`Making ${method} request to: ${apiUrl}`);
+  if (data) {
+    console.log("Request data:", data);
+  }
+  
+  try {
+    const res = await fetch(apiUrl, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    console.log(`Response status: ${res.status}`);
+    
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error("Request failed:", error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

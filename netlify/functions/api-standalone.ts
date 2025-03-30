@@ -5,6 +5,8 @@ import { registerRoutes } from '../../server/routes';
 
 // Create a serverless handler for Netlify Functions
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+  console.log(`Netlify function received ${event.httpMethod} request to ${event.path}`);
+  
   // Create Express app
   const app = express();
   
@@ -15,9 +17,11 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     if (req.method === 'OPTIONS') {
+      console.log('Handling OPTIONS request');
       return res.status(200).end();
     }
     
+    console.log(`Express handling ${req.method} ${req.path}`);
     next();
   });
   
@@ -25,19 +29,50 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   
+  // Special middleware to log request body for debugging
+  app.use((req, res, next) => {
+    if (req.body && Object.keys(req.body).length > 0) {
+      console.log('Request body:', req.body);
+    }
+    next();
+  });
+  
+  // Log exact path to ensure routes match
+  app.use((req, res, next) => {
+    console.log(`Processing path: ${req.path}`);
+    next();
+  });
+  
   // Register API routes
   await registerRoutes(app);
+  
+  // Fallback route for unmatched routes
+  app.use((req, res) => {
+    console.log(`No route matched for ${req.method} ${req.path}`);
+    res.status(404).json({ error: "Not found", path: req.path });
+  });
   
   // Create serverless handler
   const handlerFunction = serverless(app);
   
-  // Process the request and convert to Netlify Function response format
-  const response = await handlerFunction(event, context);
-  
-  // Make sure we return in the format expected by Netlify Functions
-  return {
-    statusCode: response.statusCode || 200,
-    body: response.body || '',
-    headers: response.headers || {}
-  };
+  try {
+    // Process the request and convert to Netlify Function response format
+    const response = await handlerFunction(event, context) as any;
+    
+    console.log(`Netlify function responding with status ${response.statusCode}`);
+    
+    // Make sure we return in the format expected by Netlify Functions
+    return {
+      statusCode: response.statusCode || 200,
+      body: response.body || '',
+      headers: response.headers || {}
+    };
+  } catch (error) {
+    console.error('Error in serverless handler:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Internal Server Error', message: error.message }),
+      headers: { 'Content-Type': 'application/json' }
+    };
+  }
 };
