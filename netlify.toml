@@ -7,7 +7,7 @@
   node_bundler = "esbuild"
   external_node_modules = ["express", "pg-native", "@babel/preset-typescript", "lightningcss", "vite", "@vitejs/plugin-react", "@replit/vite-plugin-shadcn-theme-json", "@replit/vite-plugin-runtime-error-modal", "@replit/vite-plugin-cartographer"]
 
-[functions."api-standalone.cjs"]
+[functions."api-standalone"]
   included_files = ["server/**", "shared/**", "client/**", "dist/**"]
 
 [build.environment]
@@ -20,7 +20,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api-standalone.cjs/:splat"
+  to = "/.netlify/functions/api-standalone/:splat"
   status = 200
 
 [[redirects]]
