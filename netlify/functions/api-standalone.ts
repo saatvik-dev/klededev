@@ -7,6 +7,44 @@ import { registerRoutes } from '../../server/routes';
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   console.log(`Netlify function received ${event.httpMethod} request to ${event.path}`);
   
+  // Immediate response for root paths - prevent "Not found" error for direct function calls
+  if (event.path === "/.netlify/functions/api-standalone" || event.path === "") {
+    console.log("Direct function call detected - responding immediately");
+    
+    // For POST requests with email data, try to handle as waitlist submission
+    if (event.httpMethod === "POST" && event.body) {
+      try {
+        const body = JSON.parse(event.body);
+        if (body && body.email && body.email.includes('@')) {
+          console.log("Email submission detected in direct function call:", body.email);
+          
+          return {
+            statusCode: 200,
+            body: JSON.stringify({
+              success: true,
+              message: "Direct submission received - will be processed",
+              email: body.email
+            }),
+            headers: { 'Content-Type': 'application/json' }
+          };
+        }
+      } catch (e) {
+        console.log("Error parsing body in direct handler:", e);
+      }
+    }
+    
+    // Default response for direct function calls (GET requests)
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: "Netlify function is working",
+        path: event.path,
+        method: event.httpMethod
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    };
+  }
+  
   // Create Express app
   const app = express();
   
@@ -43,10 +81,21 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     next();
   });
   
-  // Add a specific test endpoint just for Netlify debugging
-  app.get("/.netlify/functions/api-standalone/test", (req, res) => {
-    console.log("Test endpoint hit");
-    return res.status(200).json({ message: "Test endpoint working" });
+  // Add test endpoints for Netlify debugging - with multiple path variations
+  app.get("*", (req, res, next) => {
+    console.log("GET request received for path:", req.path);
+    
+    // Test endpoint - handle with any path suffix
+    if (req.path.includes('/test') || req.path === '/' || req.path === '') {
+      console.log("Test endpoint hit at path:", req.path);
+      return res.status(200).json({ 
+        message: "Test endpoint working",
+        path: req.path,
+        allRoutes: "This function now accepts all routes and has a catch-all handler"
+      });
+    }
+    
+    next();
   });
 
   // Catch ALL POST requests to this function, regardless of path

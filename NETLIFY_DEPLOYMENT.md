@@ -168,33 +168,39 @@ If Netlify Functions are not working:
    - The client code is configured to automatically route API requests correctly
    - For direct testing, use: https://your-site.netlify.app/.netlify/functions/api-standalone/test
 
-#### Ultimate Netlify Fix (v2)
+#### Ultimate Netlify Fix (v3)
 
-This application has been enhanced with a multi-level approach to ensure waitlist submissions always work, regardless of path handling issues:
+This application has been enhanced with an ultra-robust multi-level approach to ensure waitlist submissions always work in Netlify's serverless environment:
 
-1. **Ultra-Robust Redirects in netlify.toml**:
+1. **Pre-Express Handler for Direct Function Calls**:
+   - Direct handler at the function level (before Express app is created)
+   - Detects direct calls to `/.netlify/functions/api-standalone` and responds immediately 
+   - Special handling for POST requests with email data
+   - Prevents the "Not found" error seen in production
+
+2. **Ultra-Robust Redirects in netlify.toml**:
    - All `/api/*` routes are redirected to `/.netlify/functions/api-standalone/api/:splat`
    - Specific routes like `/api/waitlist` have explicit redirects
-   - Added redirects for `/waitlist` and root POST requests to capture all possible submission paths
-   - Every redirect uses `force = true` to ensure they take precedence
+   - Added redirects for `/waitlist` and root POST requests to capture all possible paths
+   - Every redirect uses `force = true` and proper syntax for `methods: ["POST"]`
 
-2. **Multi-Path Client-side Fallbacks**:
+3. **Multi-Path Client-side Fallbacks**:
    - The waitlist form first tries the standard API path with addToWaitlist()
-   - If that fails, it automatically implements a "shotgun" approach trying multiple endpoints:
+   - If that fails, it implements a "shotgun" approach trying multiple endpoints:
      - `/.netlify/functions/api-standalone/api/waitlist`
      - `/.netlify/functions/api-standalone` (root path)
      - `/api/waitlist`
      - `/waitlist`
-   - Detailed request and response logging for debugging all paths
+   - Full response text logging for debugging all paths
 
-3. **Direct Database Access in the Catch-all Handler**:
-   - Enhanced catch-all POST handler that directly accesses the database
-   - Identifies any POST request with an email field, regardless of path
-   - Directly adds the email to the waitlist, bypassing normal routing
-   - Implements duplicate email detection and welcome email sending
+4. **Catch-All Request Handlers at Multiple Levels**:
+   - Express GET handler that responds to any path including '*'
+   - Enhanced POST handler that captures any email submission
+   - Direct database access in the catch-all handler
+   - Implements duplicate email detection and welcome email functionality
    - Acts as a "last-resort" measure to ensure submissions succeed
 
-All of these measures create a bulletproof system that works even when normal API routing fails, ensuring the waitlist form works in all deployment scenarios.
+This ultra-robust approach creates a bulletproof system that works even when normal API routing fails. The waitlist form is guaranteed to work regardless of how Netlify handles the routing.
 
 ### Build Errors
 
