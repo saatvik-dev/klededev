@@ -6,6 +6,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { emailService } from "./emails/emailService";
 
 // Extend express-session with our custom properties
 declare module 'express-session' {
@@ -60,6 +61,15 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
       const entry = await storage.addToWaitlist({
         email: validatedData.email
       });
+      
+      // Send welcome email (async - don't wait for it to complete)
+      emailService.sendWelcomeEmail(validatedData.email)
+        .then(() => {
+          console.log(`Welcome email sent to ${validatedData.email}`);
+        })
+        .catch((error) => {
+          console.error(`Error sending welcome email to ${validatedData.email}:`, error);
+        });
       
       res.status(201).json({
         message: "Successfully added to waitlist",
@@ -136,26 +146,42 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
     res.json({ isAuthenticated: req.session.isAdmin === true });
   });
 
-  // Placeholder for email functionality (removed)
+  // Send a promotional email to all waitlist subscribers (admin only)
   app.post("/api/admin/send-promotional", authenticateAdmin, async (req, res) => {
     try {
+      const { message } = req.body;
       const entries = await storage.getAllWaitlistEntries();
       
       if (entries.length === 0) {
         return res.status(404).json({ message: "No waitlist entries found" });
       }
 
-      // Email functionality removed
+      // Send emails in parallel
+      const emailPromises = entries.map(entry => 
+        emailService.sendPromotionalEmail(entry.email, message)
+          .catch(error => {
+            console.error(`Error sending promotional email to ${entry.email}:`, error);
+            return { error: true, email: entry.email };
+          })
+      );
+
+      const results = await Promise.all(emailPromises);
+      
+      // Count successful emails
+      const failedEmails = results.filter(result => result && result.error).map(result => result.email);
+      const successCount = entries.length - failedEmails.length;
+
       res.json({ 
-        message: `Email functionality has been removed (${entries.length} subscribers)`
+        message: `Promotional emails sent to ${successCount} of ${entries.length} subscribers`,
+        failedEmails: failedEmails.length > 0 ? failedEmails : undefined
       });
     } catch (error) {
-      console.error("Error processing request:", error);
-      res.status(500).json({ message: "Failed to process request" });
+      console.error("Error sending promotional emails:", error);
+      res.status(500).json({ message: "Failed to send promotional emails" });
     }
   });
 
-  // Placeholder for email functionality (removed)
+  // Send launch announcement to all waitlist subscribers (admin only)
   app.post("/api/admin/send-launch-announcement", authenticateAdmin, async (req, res) => {
     try {
       const entries = await storage.getAllWaitlistEntries();
@@ -164,18 +190,33 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
         return res.status(404).json({ message: "No waitlist entries found" });
       }
 
-      // Email functionality removed
+      // Send emails in parallel
+      const emailPromises = entries.map(entry => 
+        emailService.sendLaunchEmail(entry.email)
+          .catch(error => {
+            console.error(`Error sending launch email to ${entry.email}:`, error);
+            return { error: true, email: entry.email };
+          })
+      );
+
+      const results = await Promise.all(emailPromises);
+      
+      // Count successful emails
+      const failedEmails = results.filter(result => result && result.error).map(result => result.email);
+      const successCount = entries.length - failedEmails.length;
+
       res.json({ 
-        message: `Email functionality has been removed (${entries.length} subscribers)`
+        message: `Launch announcement emails sent to ${successCount} of ${entries.length} subscribers`,
+        failedEmails: failedEmails.length > 0 ? failedEmails : undefined
       });
     } catch (error) {
-      console.error("Error processing request:", error);
-      res.status(500).json({ message: "Failed to process request" });
+      console.error("Error sending launch announcement emails:", error);
+      res.status(500).json({ message: "Failed to send launch announcement emails" });
     }
   });
 
-  // In serverless environments (Vercel, Netlify), return null instead of HTTP server
-  if (process.env.VERCEL || process.env.NETLIFY) {
+  // In Vercel serverless environment, return null instead of HTTP server
+  if (process.env.VERCEL) {
     return null;
   }
   
