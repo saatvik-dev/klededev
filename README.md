@@ -46,7 +46,7 @@ A sleek, minimalist waitlist platform designed for exclusive collection access.
 
 ## Deployment
 
-This project is configured for easy deployment to both Netlify and Vercel.
+This project is configured for easy deployment to Netlify.
 
 ### Deploy to Netlify
 
@@ -87,40 +87,7 @@ This project is configured for easy deployment to both Netlify and Vercel.
    npm run db:push
    ```
 
-For detailed Netlify deployment instructions, refer to [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
-
-### Deploy to Vercel (Optimized under 3MB)
-
-1. Install the Vercel CLI:
-   ```
-   npm install -g vercel
-   ```
-
-2. Login to Vercel:
-   ```
-   vercel login
-   ```
-
-3. Deploy to Vercel with automatic size optimization:
-   ```
-   vercel --prod
-   ```
-
-4. Set up environment variables:
-   ```
-   vercel env add DATABASE_URL
-   vercel env add SESSION_SECRET
-   vercel env add NODE_ENV
-   ```
-
-5. Initialize your database:
-   ```
-   curl -X GET "https://your-project-name.vercel.app/api/db-migrate?secret=YOUR_SESSION_SECRET"
-   ```
-
-For detailed Vercel deployment instructions, refer to:
-- [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) - Complete deployment guide
-- [VERCEL_SIZE_OPTIMIZATION.md](VERCEL_SIZE_OPTIMIZATION.md) - How we keep the app under Vercel's 3MB limit
+For detailed deployment instructions, refer to [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
 
 ## Admin Access
 

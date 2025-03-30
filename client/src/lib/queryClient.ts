@@ -3,9 +3,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    const errorMessage = `${res.status}: ${text}`;
-    console.error("API Error:", errorMessage, "URL:", res.url);
-    throw new Error(errorMessage);
+    throw new Error(`${res.status}: ${text}`);
   }
 }
 
@@ -15,7 +13,7 @@ async function throwIfResNotOk(res: Response) {
  * In production on Netlify, API calls go to /.netlify/functions/api-standalone
  */
 function getApiUrl(path: string): string {
-  // Make sure path starts with a slash
+  // Make sure path starts with a slash and remove any leading 'api'
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
   // If running in a browser and we're in production
@@ -24,22 +22,14 @@ function getApiUrl(path: string): string {
     
     // For API paths, remap to Netlify Functions path
     if (normalizedPath.startsWith('/api/')) {
-      const endpoint = normalizedPath.substring(5); // Remove '/api/'
-      console.log(`Redirecting ${normalizedPath} to Netlify function for endpoint: ${endpoint}`);
-      
-      // Log the URLs we're constructing to help debug
-      const netlifyUrl = `${baseUrl}/.netlify/functions/api-standalone/api/${endpoint}`;
-      console.log(`Constructed URL for Netlify: ${netlifyUrl}`);
-      
-      // Use the full path including /api/ to match our test endpoint
-      return netlifyUrl;
+      // Change /api/something to /.netlify/functions/api-standalone.cjs/something
+      return `${baseUrl}/.netlify/functions/api-standalone.cjs${normalizedPath.substring(4)}`;
     }
     
     // For non-API paths, just use the normal URL
     return `${baseUrl}${normalizedPath}`;
   }
   
-  console.log(`Using direct path for development: ${normalizedPath}`);
   // In development mode, just use the path directly
   return normalizedPath;
 }
@@ -51,27 +41,15 @@ export async function apiRequest(
 ): Promise<Response> {
   const apiUrl = getApiUrl(url);
   
-  console.log(`Making ${method} request to: ${apiUrl}`);
-  if (data) {
-    console.log("Request data:", data);
-  }
-  
-  try {
-    const res = await fetch(apiUrl, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-    });
+  const res = await fetch(apiUrl, {
+    method,
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
 
-    console.log(`Response status: ${res.status}`);
-    
-    await throwIfResNotOk(res);
-    return res;
-  } catch (error) {
-    console.error("Request failed:", error);
-    throw error;
-  }
+  await throwIfResNotOk(res);
+  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

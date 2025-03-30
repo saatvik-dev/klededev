@@ -1,193 +1,182 @@
-# Deploying to Netlify (2025 Edition)
+# Deploying to Netlify
 
-This guide provides step-by-step instructions to deploy your Klede Waitlist application to Netlify with the latest fixes and improvements.
+This guide provides step-by-step instructions to deploy your Klede Waitlist application to Netlify.
 
 ## Prerequisites
 
 1. A [Netlify](https://netlify.com) account
 2. A PostgreSQL database from one of these providers:
-   - [Neon](https://neon.tech) (Recommended - offers a generous free tier)
+   - [Neon](https://neon.tech) (Recommended - offers generous free tier)
    - [Supabase](https://supabase.com)
-   - [Railway](https://railway.app)
+   - [Railway](https://railway.app) (PostgreSQL database)
 
-## Simplified Deployment Process
+## Option 1: Deploy via Netlify CLI (Recommended)
 
-### Step 1: Build For Netlify
-
-The first step is to build your application for Netlify deployment:
+### Step 1: Install Netlify CLI
 
 ```bash
-# Make the script executable
-chmod +x ./build-for-netlify.sh
-
-# Run the build script
-./build-for-netlify.sh
+npm install -g netlify-cli
 ```
 
-This optimized build script will:
-1. Install all required dependencies
-2. Build your frontend application
-3. Create the necessary directories for Netlify functions
-4. Compile TypeScript functions to JavaScript
-5. Copy required server files and node modules
-6. Prepare a distribution folder ready for deployment
+### Step 2: Prepare Your Database
 
-### Step 2: Deploy to Netlify
+1. Create a PostgreSQL database on your preferred platform
+2. Get your database connection string in the format: `postgresql://username:password@host:port/database`
+3. Make sure to enable SSL connections for your database
 
-#### Option A: Using Netlify CLI (Recommended)
+### Step 3: Login to Netlify
 
 ```bash
-# Install Netlify CLI if you don't have it
-npm install -g netlify-cli
-
-# Log in to your Netlify account
 netlify login
+```
 
-# Deploy your site (answer the prompts)
+### Step 4: Initialize and Deploy Your Site
+
+```bash
+# Initialize Netlify site
+netlify init
+
+# Build the project for Netlify
+./build-for-netlify.sh
+
+# Deploy to Netlify
 netlify deploy --prod
 ```
 
-When prompted:
-- For "Publish directory", enter `dist`
-
-#### Option B: Manual Upload (Alternative)
-
-1. Go to [Netlify](https://app.netlify.com)
-2. Drag and drop the `dist` folder from your project
-3. Follow the prompts to complete deployment
-
-### Step 3: Configure Environment Variables
-
-After deployment, add these required environment variables:
+### Step 5: Set Environment Variables
 
 ```bash
-# Database connection string
-netlify env:set DATABASE_URL "postgresql://username:password@hostname:port/database"
-
-# Random string for session security
-netlify env:set SESSION_SECRET "your-random-string-here"
-
-# Set environment to production
+# Set environment variables
+netlify env:set DATABASE_URL "your-database-connection-string"
+netlify env:set SESSION_SECRET "your-random-session-secret"
 netlify env:set NODE_ENV "production"
-
-# Optional: Set admin credentials (defaults to admin/admin123 if not set)
-netlify env:set ADMIN_USERNAME "your-admin-username"
-netlify env:set ADMIN_PASSWORD "your-secure-password"
 ```
 
-### Step 4: Initialize Database
+### Step 6: Push Database Schema
 
-Run the following command to set up your database tables:
+There are multiple ways to deploy your database schema:
 
+**Option 1: Push schema directly from your machine**
 ```bash
+# Make sure DATABASE_URL is set correctly in your .env file
+npm run db:push
+```
+
+**Option 2: Use the built-in migration function after deployment**
+```bash
+# Invoke the db-migrate function through Netlify CLI
 netlify functions:invoke db-migrate --no-identity
 ```
 
-This enhanced migration function will:
-1. Create the necessary database tables
-2. Set up an admin user account
-3. Provide detailed error messages if something goes wrong
+**Option 3: Automatic migrations during build**
+If you've set DATABASE_URL in your Netlify environment variables, the build-for-netlify.sh script will automatically attempt to run migrations during deployment.
 
-## Verification and Testing
+## Option 2: Deploy via Netlify Dashboard
 
-After deployment, verify that everything is working:
+### Step 1: Prepare Repository
 
-1. Visit your Netlify site URL (e.g., `https://your-site.netlify.app`)
-2. Submit an email through the waitlist form
-3. Access the admin panel at `/admin` using your admin credentials
-4. Check that emails are sent to subscribers
+1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
+2. Make sure your repository is public or you've connected Netlify to your Git provider
 
-### Debug Endpoints
+### Step 2: Create a New Site in Netlify
 
-If you need to troubleshoot:
+1. Log in to your Netlify account
+2. Click "New site from Git"
+3. Select your repository
+4. Configure build settings:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+   - Functions directory: `netlify/functions`
 
-1. **Test function**: Visit `https://your-site.netlify.app/.netlify/functions/api-standalone/test`
-   - Should return `{"message":"Test endpoint working"}`
+### Step 3: Configure Environment Variables
 
-2. **Direct API test**:
+1. In your site dashboard, go to "Site settings" > "Environment variables"
+2. Add the following environment variables:
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `SESSION_SECRET`: A random string for session security
+   - `NODE_ENV`: Set to "production"
+
+### Step 4: Deploy the Site
+
+1. Trigger a manual deploy from the Netlify dashboard
+2. Once deployed, use Netlify CLI to run the database migration:
    ```bash
-   curl -X POST https://your-site.netlify.app/.netlify/functions/api-standalone/api/waitlist \
-     -H "Content-Type: application/json" \
-     -d '{"email":"test@example.com"}'
+   netlify login
+   netlify link
+   netlify functions:invoke db-migrate --no-identity
    ```
 
-## 2025 Bulletproof Implementation
+## Verifying Your Deployment
 
-This application uses a multi-layered, ultra-robust approach to ensure it works in Netlify's serverless environment:
-
-### 1. Optimized Build Process
-- Complete distribution folder with all required files
-- Proper TypeScript compilation for serverless functions
-- Dependencies bundled where needed
-
-### 2. Multi-Path Routing
-- Comprehensive `netlify.toml` redirects for all scenarios
-- Path rewriting to ensure all requests reach the appropriate function
-- Special handling for form submissions via POST requests
-
-### 3. Enhanced API Function (api-standalone.ts)
-- Pre-Express direct request handler that catches all requests
-- Special handling for both direct function calls and Express routes
-- Extra logging for debugging and error identification
-
-### 4. Client-Side Fallbacks
-- Multi-endpoint retry strategy for form submissions
-- Automatic path adjustment based on environment (dev/prod)
-- Enhanced error handling with toast notifications
-
-### 5. Direct Database Access
-- Catch-all handlers with direct database access
-- Redundant error handling at multiple levels
-- Duplicate email detection in all paths
+1. Open your deployed application URL
+2. Test the waitlist form by submitting your email
+3. Test the admin panel by navigating to `/admin` and logging in with:
+   - Username: `admin`
+   - Password: `admin`
+4. Check that emails are sent correctly when users sign up
 
 ## Troubleshooting
 
-### Database Issues
-- **Connection errors**: Verify your DATABASE_URL is correct
-- **SSL errors**: Make sure your database provider has SSL enabled
-- **Migration errors**: Check function logs in Netlify dashboard
+### Database Connection Issues
 
-### Form Submission Issues
-- Check Netlify function logs for detailed error messages
-- Try alternative submission paths (detailed in Debug Endpoints)
-- Inspect browser console for client-side errors
+If you encounter database connection errors:
 
-### Email Notification Issues
-- Set up a proper SMTP server (or use nodemailer test account)
-- Check function logs for email sending errors
+1. Verify your `DATABASE_URL` is correct in Netlify environment variables
+2. Make sure your database accepts connections from Netlify's IPs
+3. If using Neon/Supabase, ensure you've enabled SSL connections
+4. Check if your database requires a specific connection string format
 
-## Latest Fixes (March 2025)
+### Database Migration Issues
 
-The latest improvements include:
+If you're encountering "ECONNREFUSED" errors when running `db:push`:
 
-1. **Enhanced build script**:
-   - Fixed distribution folder structure
-   - Proper module bundling for serverless functions
-   - Typescript compilation with correct parameters
+1. **Local machine errors**: 
+   - If running locally, ensure your PostgreSQL server is running on the expected port
+   - Update your .env file with the correct DATABASE_URL
+   - For cloud databases, make sure your local IP is allowed in the database firewall settings
 
-2. **Improved database migration**:
-   - Direct SQL table creation for reliability
-   - Better error reporting with detailed logs
-   - Automatic admin account creation
+2. **Netlify environment errors**:
+   - Check the DATABASE_URL in Netlify environment variables
+   - Use the built-in migration function: `netlify functions:invoke db-migrate --no-identity`
+   - Check the function logs in Netlify dashboard for detailed error messages
 
-3. **Ultra-robust client code**:
-   - Multiple endpoint fallbacks for all requests
-   - Enhanced error handling with user feedback
-   - Path normalization across environments
+### Function Errors
 
-4. **Optimized Netlify configuration**:
-   - Correct publish directory setting (dist instead of dist/public)
-   - Explicit function bundling settings
-   - Comprehensive redirects for all possible paths
+If Netlify Functions are not working:
 
-## Next Steps
+1. Check the function logs in the Netlify dashboard
+2. Verify the `netlify.toml` configuration
+3. Make sure your API routes match what the client is calling
+4. The project now uses `api-standalone.cjs` for serverless functions to avoid ESM/CJS compatibility issues
+   - This file uses CommonJS format (.cjs extension) to be compatible with Node.js module system
+   - API routes should point to `/.netlify/functions/api-standalone.cjs` in production
 
-After successful deployment:
+### Build Errors
 
-1. Customize email templates in `server/emails/templates.ts`
-2. Change the default admin credentials through environment variables
-3. Add a custom domain in Netlify settings
+If your deployment fails to build:
+
+1. Check the build logs for errors
+2. Make sure all dependencies are correctly specified in package.json
+3. Verify your build script and publish directory settings
+4. ESM/CJS Compatibility Issues:
+   - If you see "Top-level await is not supported with 'cjs' output format" errors:
+     - These are fixed by using the CommonJS function in `api-standalone.cjs`
+     - The `.cjs` extension tells Node.js to use CommonJS module format
+     - The original api.ts file has been renamed to avoid build conflicts
+   - If you see "CommonJS 'exports' variable treated as global" warnings:
+     - These are expected and don't affect functionality when using .cjs extension
+5. If you see dependency errors (like missing @babel/preset-typescript or lightningcss):
+   - These dependencies are now explicitly installed in the build process
+   - The build-for-netlify.sh script handles installing these dependencies
+
+## Custom Domains
+
+To add a custom domain to your Netlify site:
+
+1. Go to "Site settings" > "Domain management"
+2. Click "Add custom domain"
+3. Follow the instructions to configure DNS settings
 
 ## Congratulations!
 
-Your Klede Waitlist application is now live on Netlify with a bulletproof deployment! 🎉
+Your Klede Waitlist application is now live on Netlify! 🎉

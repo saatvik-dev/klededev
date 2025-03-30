@@ -28,103 +28,17 @@ const WaitlistCard: React.FC = () => {
   
   const mutation = useMutation({
     mutationFn: (data: EmailFormValues) => {
-      // Display a loading toast
-      toast({
-        title: "Submitting...",
-        description: "Adding your email to our waitlist",
-      });
-      
       return addToWaitlist(data.email);
     },
-    onSuccess: (response) => {
-      console.log("Waitlist submission succeeded:", response);
-      
-      // Clear any existing toasts
-      toast({
-        title: "Success!",
-        description: "You've been added to our waitlist. Check your email for confirmation.",
-        variant: "default",
-      });
-      
+    onSuccess: () => {
       setIsSuccess(true);
     },
-    onError: async (error: any) => {
-      console.error("Waitlist submission error:", error);
-      
-      // Check if it's a duplicate email (HTTP 409)
-      if (error.message && error.message.includes("409")) {
-        toast({
-          title: "Already registered",
-          description: "This email is already on our waitlist.",
-          variant: "default",
-        });
-        setIsSuccess(true); // Still show success UI for duplicates
-        return;
-      }
-      
-      // Try super aggressive direct fetch fallbacks using multiple paths
-      try {
-        console.log("Trying direct fetch fallbacks for waitlist submission");
-        const email = (document.querySelector('input[type="email"]') as HTMLInputElement)?.value;
-        
-        if (!email || !email.includes('@')) {
-          throw new Error("No valid email found for fallback submission");
-        }
-        
-        console.log(`Using fallback with email: ${email}`);
-        const baseUrl = window.location.origin;
-        
-        // Try multiple possible endpoints
-        const possibleEndpoints = [
-          `${baseUrl}/.netlify/functions/api-standalone/api/waitlist`,
-          `${baseUrl}/.netlify/functions/api-standalone`,
-          `${baseUrl}/api/waitlist`,
-          `${baseUrl}/waitlist`
-        ];
-        
-        // Try each endpoint until one works
-        for (const endpoint of possibleEndpoints) {
-          try {
-            console.log(`Trying fallback endpoint: ${endpoint}`);
-            const response = await fetch(endpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email }),
-            });
-            
-            const responseText = await response.text();
-            console.log(`Response from ${endpoint}:`, responseText);
-            
-            if (response.ok) {
-              console.log(`Success with fallback endpoint: ${endpoint}`);
-              
-              toast({
-                title: "Success!",
-                description: "You've been added to our waitlist. Check your email for confirmation.",
-                variant: "default",
-              });
-              
-              setIsSuccess(true);
-              return; // Exit the error handler
-            }
-          } catch (endpointError) {
-            console.error(`Error with fallback endpoint ${endpoint}:`, endpointError);
-            // Continue to next endpoint
-          }
-        }
-        
-        // If we get here, all fallbacks failed
-        throw new Error("All fallback attempts failed");
-      } catch (fallbackError) {
-        console.error("All fallback attempts failed:", fallbackError);
-        
-        // For other errors, show detailed error message
-        toast({
-          title: "Unable to join waitlist",
-          description: `We're experiencing technical difficulties. Please try again later or contact support.`,
-          variant: "destructive",
-        });
-      }
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to join waitlist. Please try again.",
+        variant: "destructive",
+      });
     }
   });
   

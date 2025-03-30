@@ -117,44 +117,6 @@ After deployment completes, you need to set up your database schema:
    - Password: `admin`
 4. Check that emails are sent correctly when users sign up
 
-## Size Optimization for Vercel
-
-The project includes a special optimization script to ensure your deployment stays under Vercel's 3MB serverless function limit:
-
-### Using the Size Optimizer
-
-1. The project includes a dedicated script for Vercel size optimization:
-   ```bash
-   ./optimize-for-vercel.sh
-   ```
-
-2. This script:
-   - Removes unnecessary files and development dependencies
-   - Minifies all code for production
-   - Optimizes bundle sizes with tree-shaking
-   - Ensures proper file extensions for Vercel deployment
-   - Creates an optimized distribution under 3MB
-
-3. The optimization is automatically used when you deploy with:
-   ```bash
-   vercel --prod
-   ```
-
-### Manual Size Optimization
-
-If you need to manually optimize before deploying:
-
-1. Run the optimization script:
-   ```bash
-   chmod +x optimize-for-vercel.sh
-   ./optimize-for-vercel.sh
-   ```
-
-2. Use the prebuilt deployment option:
-   ```bash
-   vercel deploy --prebuilt
-   ```
-
 ## Troubleshooting Common Issues
 
 ### Database Connection Errors
@@ -173,7 +135,6 @@ If your deployment fails to build:
 1. Check the Vercel build logs for errors
 2. Verify that all necessary environment variables are set
 3. Try rebuilding the deployment from the Vercel dashboard
-4. If you get size limit errors, ensure you're using the optimization script
 
 ### API Routes Not Working
 
