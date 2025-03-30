@@ -43,7 +43,7 @@
   to = "/.netlify/functions/api-standalone"
   status = 200
   force = true
-  method = POST
+  methods = ["POST"]
 
 [[redirects]]
   from = "/api/admin/*"
