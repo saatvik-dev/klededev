@@ -168,24 +168,33 @@ If Netlify Functions are not working:
    - The client code is configured to automatically route API requests correctly
    - For direct testing, use: https://your-site.netlify.app/.netlify/functions/api-standalone/test
 
-#### Path Handling in Netlify
+#### Ultimate Netlify Fix (v2)
 
-This application has enhanced error handling and multiple API path strategies:
+This application has been enhanced with a multi-level approach to ensure waitlist submissions always work, regardless of path handling issues:
 
-1. **Redirects in netlify.toml**:
+1. **Ultra-Robust Redirects in netlify.toml**:
    - All `/api/*` routes are redirected to `/.netlify/functions/api-standalone/api/:splat`
    - Specific routes like `/api/waitlist` have explicit redirects
-   - These redirects use `force = true` to ensure they take precedence
+   - Added redirects for `/waitlist` and root POST requests to capture all possible submission paths
+   - Every redirect uses `force = true` to ensure they take precedence
 
-2. **Client-side Fallbacks**:
-   - The waitlist form will first try the standard API path
-   - If that fails, it automatically retries with the direct Netlify function path
-   - Detailed error logging helps identify the exact issue
+2. **Multi-Path Client-side Fallbacks**:
+   - The waitlist form first tries the standard API path with addToWaitlist()
+   - If that fails, it automatically implements a "shotgun" approach trying multiple endpoints:
+     - `/.netlify/functions/api-standalone/api/waitlist`
+     - `/.netlify/functions/api-standalone` (root path)
+     - `/api/waitlist`
+     - `/waitlist`
+   - Detailed request and response logging for debugging all paths
 
-3. **Catch-all Handler in the Netlify Function**:
-   - A special catch-all POST handler captures any waitlist submission
-   - This acts as a final safety net to ensure form submissions don't fail
-   - Check logs for "POST request received at path" to see exactly what path is being hit
+3. **Direct Database Access in the Catch-all Handler**:
+   - Enhanced catch-all POST handler that directly accesses the database
+   - Identifies any POST request with an email field, regardless of path
+   - Directly adds the email to the waitlist, bypassing normal routing
+   - Implements duplicate email detection and welcome email sending
+   - Acts as a "last-resort" measure to ensure submissions succeed
+
+All of these measures create a bulletproof system that works even when normal API routing fails, ensuring the waitlist form works in all deployment scenarios.
 
 ### Build Errors
 

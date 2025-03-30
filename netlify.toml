@@ -24,12 +24,26 @@
   status = 200
   force = true
 
-# Explicitly handle some key API endpoints
+# Explicitly handle all possible variations of the waitlist endpoint
 [[redirects]]
   from = "/api/waitlist"
   to = "/.netlify/functions/api-standalone/api/waitlist"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/waitlist"
+  to = "/.netlify/functions/api-standalone/api/waitlist"
+  status = 200
+  force = true
+
+# Handle POST requests to root - could be waitlist submissions
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/api-standalone"
+  status = 200
+  force = true
+  method = POST
 
 [[redirects]]
   from = "/api/admin/*"
