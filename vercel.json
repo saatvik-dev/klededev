@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "./build-for-vercel.sh",
-  "installCommand": "npm install",
+  "buildCommand": "./optimize-for-vercel.sh",
+  "installCommand": "npm install --production",
   "framework": null,
   "outputDirectory": "dist",
   "routes": [
