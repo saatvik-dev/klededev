@@ -9,7 +9,7 @@ npm ci
 
 # Install specific dependencies that might be causing build issues
 echo "Ensuring build dependencies are installed..."
-npm install @babel/preset-typescript lightningcss --save-dev
+npm install @babel/preset-typescript lightningcss @types/express typescript tsx --save-dev
 
 # Build the client
 echo "Building client..."
@@ -17,26 +17,48 @@ npm run build
 
 # Create the necessary directories for Netlify functions
 echo "Preparing Netlify functions directories..."
-mkdir -p .netlify/functions
-mkdir -p netlify/functions
+mkdir -p dist/.netlify/functions
+mkdir -p dist/netlify/functions
 
-# Copy any necessary files for serverless functions
-echo "Processing Netlify functions..."
-# Rename any .js files in netlify/functions to .cjs to ensure proper CommonJS handling
-for file in netlify/functions/*.js; do
-  if [ -f "$file" ]; then
-    echo "Converting $file to CommonJS (.cjs) format"
-    base_name=$(basename "$file" .js)
-    mv "$file" "netlify/functions/${base_name}.cjs"
-  fi
-done
+# Compile the API standalone function
+echo "Compiling Netlify functions..."
+npx tsc netlify/functions/api-standalone.ts --target ES2018 --module CommonJS --esModuleInterop true --outDir dist/netlify/functions/
 
-# Make sure we don't have any incompatible ESM/CJS mix
-echo "Checking for API functions..."
-if [ -f "netlify/functions/api.ts" ]; then
-  echo "Backing up api.ts to avoid ESM/CJS conflicts"
-  mv netlify/functions/api.ts netlify/functions/api.ts.backup
-fi
+# Copy the netlify.toml file to dist
+echo "Copying netlify.toml to dist..."
+cp netlify.toml dist/
+
+# Create a simplified package.json for functions
+echo "Creating package.json for functions..."
+cat > dist/netlify/functions/package.json << EOF
+{
+  "name": "netlify-functions",
+  "private": true,
+  "dependencies": {
+    "@netlify/functions": "^1.6.0",
+    "express": "^4.18.2",
+    "serverless-http": "^3.1.1",
+    "pg": "^8.11.0",
+    "drizzle-orm": "^0.28.0"
+  }
+}
+EOF
+
+# Copy the required modules for serverless functions
+echo "Copying node_modules for functions..."
+mkdir -p dist/netlify/functions/node_modules
+cp -r node_modules/express dist/netlify/functions/node_modules/
+cp -r node_modules/serverless-http dist/netlify/functions/node_modules/
+cp -r node_modules/@netlify dist/netlify/functions/node_modules/
+cp -r node_modules/pg dist/netlify/functions/node_modules/
+cp -r node_modules/drizzle-orm dist/netlify/functions/node_modules/
+
+# Ensure the necessary server files are available to functions
+echo "Copying server files for functions..."
+mkdir -p dist/netlify/functions/server
+mkdir -p dist/netlify/functions/shared
+cp -r server dist/netlify/functions/
+cp -r shared dist/netlify/functions/
 
 # Attempt to run database migrations if DATABASE_URL is set
 if [ -n "$DATABASE_URL" ]; then
@@ -57,5 +79,9 @@ fi
 echo "Build completed successfully!"
 echo "To deploy to Netlify, use:"
 echo "  netlify deploy --prod"
+echo "When prompted, specify 'dist' as your publish directory."
 echo " "
-echo "Remember to set the DATABASE_URL and SESSION_SECRET in Netlify environment variables."
+echo "Remember to set these environment variables in Netlify:"
+echo "  DATABASE_URL - Your PostgreSQL connection string"
+echo "  SESSION_SECRET - A random string for session security"
+echo "  NODE_ENV - Set to 'production'"

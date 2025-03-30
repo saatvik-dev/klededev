@@ -1,11 +1,11 @@
 [build]
   command = "bash ./build-for-netlify.sh"
-  publish = "dist/public"
-  functions = "netlify/functions"
+  publish = "dist"
+  functions = "dist/netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["express", "pg-native", "@babel/preset-typescript", "lightningcss", "vite", "@vitejs/plugin-react", "@replit/vite-plugin-shadcn-theme-json", "@replit/vite-plugin-runtime-error-modal", "@replit/vite-plugin-cartographer"]
+  external_node_modules = ["express", "pg", "drizzle-orm", "pg-native", "@babel/preset-typescript", "lightningcss", "vite", "@vitejs/plugin-react"]
 
 [functions."api-standalone"]
   included_files = ["server/**", "shared/**", "client/**", "dist/**"]
@@ -18,26 +18,29 @@
   command = "npm run dev"
   port = 5000
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api-standalone/api/:splat"
-  status = 200
-  force = true
-
-# Explicitly handle all possible variations of the waitlist endpoint
+# Handle all waitlist submissions
 [[redirects]]
   from = "/api/waitlist"
   to = "/.netlify/functions/api-standalone/api/waitlist"
   status = 200
   force = true
+  methods = ["POST"]
 
 [[redirects]]
   from = "/waitlist"
   to = "/.netlify/functions/api-standalone/api/waitlist"
   status = 200
   force = true
+  methods = ["POST"]
 
-# Handle POST requests to root - could be waitlist submissions
+# Handle API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api-standalone/api/:splat"
+  status = 200
+  force = true
+
+# Handle direct POST to root (for form submissions)
 [[redirects]]
   from = "/"
   to = "/.netlify/functions/api-standalone"
@@ -45,12 +48,28 @@
   force = true
   methods = ["POST"]
 
+# Handle direct POST to the function path itself
+[[redirects]]
+  from = "/.netlify/functions/api-standalone"
+  to = "/.netlify/functions/api-standalone"
+  status = 200
+  force = true
+  methods = ["POST"]
+
+# Handle admin routes
 [[redirects]]
   from = "/api/admin/*"
   to = "/.netlify/functions/api-standalone/api/admin/:splat"
   status = 200
   force = true
 
+# Serve static assets
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+# Single-page application route
 [[redirects]]
   from = "/*"
   to = "/index.html"
