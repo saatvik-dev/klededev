@@ -24,9 +24,15 @@ function getApiUrl(path: string): string {
     
     // For API paths, remap to Netlify Functions path
     if (normalizedPath.startsWith('/api/')) {
-      console.log(`Redirecting ${normalizedPath} to Netlify function`);
-      // Change /api/something to /.netlify/functions/api-standalone/something
-      return `${baseUrl}/.netlify/functions/api-standalone${normalizedPath.substring(4)}`;
+      const endpoint = normalizedPath.substring(5); // Remove '/api/'
+      console.log(`Redirecting ${normalizedPath} to Netlify function for endpoint: ${endpoint}`);
+      
+      // Log the URLs we're constructing to help debug
+      const netlifyUrl = `${baseUrl}/.netlify/functions/api-standalone/api/${endpoint}`;
+      console.log(`Constructed URL for Netlify: ${netlifyUrl}`);
+      
+      // Use the full path including /api/ to match our test endpoint
+      return netlifyUrl;
     }
     
     // For non-API paths, just use the normal URL

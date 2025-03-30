@@ -43,6 +43,18 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     next();
   });
   
+  // Add a specific test endpoint just for Netlify debugging
+  app.get("/.netlify/functions/api-standalone/test", (req, res) => {
+    console.log("Test endpoint hit");
+    return res.status(200).json({ message: "Test endpoint working" });
+  });
+
+  app.post("/.netlify/functions/api-standalone/api/waitlist", (req, res) => {
+    console.log("Direct Netlify waitlist endpoint hit");
+    console.log("Body:", req.body);
+    return res.status(200).json({ message: "Direct waitlist endpoint received" });
+  });
+  
   // Register API routes
   await registerRoutes(app);
   

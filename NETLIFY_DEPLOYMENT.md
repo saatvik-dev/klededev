@@ -115,6 +115,22 @@ If you've set DATABASE_URL in your Netlify environment variables, the build-for-
    - Password: `admin`
 4. Check that emails are sent correctly when users sign up
 
+### Debug Endpoints
+
+If you're having trouble with the form submission, you can test the Netlify function directly:
+
+1. **Test endpoint**: Visit `https://your-site.netlify.app/.netlify/functions/api-standalone/test`
+   - This should return a JSON response with `{"message":"Test endpoint working"}`
+   - If this works, the function is deployed correctly
+
+2. **Direct waitlist test**: Use the following curl command to test the waitlist API directly:
+   ```bash
+   curl -X POST https://your-site.netlify.app/.netlify/functions/api-standalone/api/waitlist \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com"}'
+   ```
+   - This should return a success message or an error if the email already exists
+
 ## Troubleshooting
 
 ### Database Connection Issues
@@ -147,9 +163,10 @@ If Netlify Functions are not working:
 1. Check the function logs in the Netlify dashboard
 2. Verify the `netlify.toml` configuration
 3. Make sure your API routes match what the client is calling
-4. The project now uses `api-standalone.cjs` for serverless functions to avoid ESM/CJS compatibility issues
-   - This file uses CommonJS format (.cjs extension) to be compatible with Node.js module system
-   - API routes should point to `/.netlify/functions/api-standalone.cjs` in production
+4. The project uses `api-standalone.ts` which is compiled to JS during build:
+   - API routes should point to `/.netlify/functions/api-standalone` in production
+   - The client code is configured to automatically route API requests correctly
+   - For direct testing, use: https://your-site.netlify.app/.netlify/functions/api-standalone/test
 
 ### Build Errors
 
