@@ -20,7 +20,20 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api-standalone/:splat"
+  to = "/.netlify/functions/api-standalone/api/:splat"
+  status = 200
+  force = true
+
+# Explicitly handle some key API endpoints
+[[redirects]]
+  from = "/api/waitlist"
+  to = "/.netlify/functions/api-standalone/api/waitlist"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/*"
+  to = "/.netlify/functions/api-standalone/api/admin/:splat"
   status = 200
   force = true
 

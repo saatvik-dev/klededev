@@ -49,10 +49,27 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     return res.status(200).json({ message: "Test endpoint working" });
   });
 
-  app.post("/.netlify/functions/api-standalone/api/waitlist", (req, res) => {
-    console.log("Direct Netlify waitlist endpoint hit");
-    console.log("Body:", req.body);
-    return res.status(200).json({ message: "Direct waitlist endpoint received" });
+  // Catch ALL POST requests to this function, regardless of path
+  app.post("*", (req, res, next) => {
+    console.log(`POST request received at path: ${req.path}`);
+    console.log("Headers:", JSON.stringify(req.headers));
+    console.log("Body:", JSON.stringify(req.body));
+    
+    // Check if this looks like a waitlist submission
+    if (req.body && req.body.email && (
+        req.path.includes('/waitlist') || 
+        req.path.includes('/api/waitlist'))
+    ) {
+      console.log("This appears to be a waitlist submission with email:", req.body.email);
+      return res.status(200).json({ 
+        message: "Waitlist form received via catch-all handler",
+        email: req.body.email,
+        path: req.path
+      });
+    }
+    
+    // Not a waitlist request, pass to next handler
+    next();
   });
   
   // Register API routes

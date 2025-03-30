@@ -168,6 +168,25 @@ If Netlify Functions are not working:
    - The client code is configured to automatically route API requests correctly
    - For direct testing, use: https://your-site.netlify.app/.netlify/functions/api-standalone/test
 
+#### Path Handling in Netlify
+
+This application has enhanced error handling and multiple API path strategies:
+
+1. **Redirects in netlify.toml**:
+   - All `/api/*` routes are redirected to `/.netlify/functions/api-standalone/api/:splat`
+   - Specific routes like `/api/waitlist` have explicit redirects
+   - These redirects use `force = true` to ensure they take precedence
+
+2. **Client-side Fallbacks**:
+   - The waitlist form will first try the standard API path
+   - If that fails, it automatically retries with the direct Netlify function path
+   - Detailed error logging helps identify the exact issue
+
+3. **Catch-all Handler in the Netlify Function**:
+   - A special catch-all POST handler captures any waitlist submission
+   - This acts as a final safety net to ensure form submissions don't fail
+   - Check logs for "POST request received at path" to see exactly what path is being hit
+
 ### Build Errors
 
 If your deployment fails to build:

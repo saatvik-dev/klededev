@@ -28,15 +28,44 @@ const WaitlistCard: React.FC = () => {
   
   const mutation = useMutation({
     mutationFn: (data: EmailFormValues) => {
+      // Display a loading toast
+      toast({
+        title: "Submitting...",
+        description: "Adding your email to our waitlist",
+      });
+      
       return addToWaitlist(data.email);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log("Waitlist submission succeeded:", response);
+      
+      // Clear any existing toasts
+      toast({
+        title: "Success!",
+        description: "You've been added to our waitlist. Check your email for confirmation.",
+        variant: "default",
+      });
+      
       setIsSuccess(true);
     },
     onError: (error: any) => {
+      console.error("Waitlist submission error:", error);
+      
+      // Check if it's a duplicate email (HTTP 409)
+      if (error.message && error.message.includes("409")) {
+        toast({
+          title: "Already registered",
+          description: "This email is already on our waitlist.",
+          variant: "default",
+        });
+        setIsSuccess(true); // Still show success UI for duplicates
+        return;
+      }
+      
+      // For other errors, show detailed error message
       toast({
-        title: "Error",
-        description: error.message || "Failed to join waitlist. Please try again.",
+        title: "Unable to join waitlist",
+        description: `Error: ${error.message || "Unknown error"}. Please try again later or contact support.`,
         variant: "destructive",
       });
     }
