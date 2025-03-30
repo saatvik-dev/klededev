@@ -25,15 +25,15 @@ export async function checkAdminAuth() {
 }
 
 /**
- * Send a promotional email to all waitlist subscribers
- * @param message Optional custom message to include in the email
+ * Notify all waitlist subscribers (email functionality removed)
+ * @param message Optional custom message
  */
 export async function sendPromotionalEmail(message?: string) {
   return apiRequest("POST", "/api/admin/send-promotional", { message });
 }
 
 /**
- * Send a launch announcement email to all waitlist subscribers
+ * Notify launch to all waitlist subscribers (email functionality removed)
  */
 export async function sendLaunchAnnouncement() {
   return apiRequest("POST", "/api/admin/send-launch-announcement", {});

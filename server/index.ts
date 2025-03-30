@@ -74,8 +74,8 @@ export async function createServer(options = { serverless: false }) {
 
   // In serverless environments, we don't need Vite setup
   if (options.serverless) {
-    // In serverless, just serve static files if needed
-    serveStatic(app);
+    // In serverless, don't serve static files as that's handled by the platform
+    log('Running in serverless mode, skipping static file serving');
   } else {
     // Setup Vite in development or serve static in production
     if (process.env.NODE_ENV !== "production") {

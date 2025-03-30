@@ -145,7 +145,7 @@ const AdminDashboard: React.FC = () => {
       <Tabs defaultValue="subscribers" className="mb-6">
         <TabsList className="mb-4">
           <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
-          <TabsTrigger value="email-marketing">Email Marketing</TabsTrigger>
+          <TabsTrigger value="email-marketing">Notifications</TabsTrigger>
         </TabsList>
         
         <TabsContent value="subscribers">
@@ -204,9 +204,9 @@ const AdminDashboard: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Promotional Email</CardTitle>
+                <CardTitle>Promotional Notification</CardTitle>
                 <CardDescription>
-                  Send a promotional email to all waitlist subscribers.
+                  Send a promotional notification to all waitlist subscribers.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -220,7 +220,7 @@ const AdminDashboard: React.FC = () => {
                       rows={4}
                     />
                     <p className="text-xs text-muted-foreground">
-                      This message will be included in the promotional email template.
+                      This message will be included in the promotional notification.
                     </p>
                   </div>
                   
@@ -230,7 +230,7 @@ const AdminDashboard: React.FC = () => {
                     disabled={entries.length === 0}
                   >
                     <Mail className="mr-2 h-4 w-4" />
-                    Prepare Promotional Email
+                    Prepare Promotional Notification
                   </Button>
                 </div>
               </CardContent>
@@ -238,15 +238,15 @@ const AdminDashboard: React.FC = () => {
             
             <Card>
               <CardHeader>
-                <CardTitle>Launch Announcement</CardTitle>
+                <CardTitle>Launch Notification</CardTitle>
                 <CardDescription>
-                  Send a launch announcement to all waitlist subscribers.
+                  Send a launch notification to all waitlist subscribers.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm">
-                    The launch announcement will inform your subscribers that your collection is now live
+                    The launch notification will inform your subscribers that your collection is now live
                     and they have exclusive early access.
                   </p>
                   
@@ -256,7 +256,7 @@ const AdminDashboard: React.FC = () => {
                     disabled={entries.length === 0}
                   >
                     <Rocket className="mr-2 h-4 w-4" />
-                    Prepare Launch Announcement
+                    Prepare Launch Notification
                   </Button>
                 </div>
               </CardContent>
@@ -288,19 +288,19 @@ const AdminDashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Promotional Email Confirmation Dialog */}
+      {/* Promotional Notification Confirmation Dialog */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Promotional Email</DialogTitle>
+            <DialogTitle>Send Promotional Notification</DialogTitle>
             <DialogDescription>
-              You are about to send a promotional email to {entries.length} subscribers. This action cannot be undone.
+              You are about to send a promotional notification to {entries.length} subscribers. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm font-medium mb-2">Email Preview:</p>
+            <p className="text-sm font-medium mb-2">Notification Preview:</p>
             <div className="border rounded-md p-3 bg-muted/50">
-              <p className="text-sm mb-2"><strong>Subject:</strong> Special Announcement for Our Waitlist Members</p>
+              <p className="text-sm mb-2"><strong>Type:</strong> Special Announcement for Waitlist Members</p>
               <div className="text-sm">
                 <p><strong>Message:</strong></p>
                 <p className="text-muted-foreground">
@@ -318,28 +318,28 @@ const AdminDashboard: React.FC = () => {
               disabled={sendPromotionalEmailMutation.isPending}
             >
               {sendPromotionalEmailMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Send Email
+              Send Notification
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Launch Announcement Confirmation Dialog */}
+      {/* Launch Notification Confirmation Dialog */}
       <Dialog open={isLaunchDialogOpen} onOpenChange={setIsLaunchDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Launch Announcement</DialogTitle>
+            <DialogTitle>Send Launch Notification</DialogTitle>
             <DialogDescription>
-              You are about to send a launch announcement to {entries.length} subscribers. This action cannot be undone.
+              You are about to send a launch notification to {entries.length} subscribers. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm font-medium mb-2">Email Preview:</p>
+            <p className="text-sm font-medium mb-2">Notification Preview:</p>
             <div className="border rounded-md p-3 bg-muted/50">
-              <p className="text-sm mb-2"><strong>Subject:</strong> Our Collection Has Launched - Exclusive Access Inside</p>
+              <p className="text-sm mb-2"><strong>Type:</strong> Collection Launch Announcement</p>
               <div className="text-sm">
                 <p className="text-muted-foreground">
-                  This email will announce that your collection is now live and provide subscribers with early access.
+                  This notification will announce that your collection is now live and provide subscribers with early access information.
                 </p>
               </div>
             </div>
@@ -353,7 +353,7 @@ const AdminDashboard: React.FC = () => {
               disabled={sendLaunchAnnouncementMutation.isPending}
             >
               {sendLaunchAnnouncementMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Send Announcement
+              Send Notification
             </Button>
           </DialogFooter>
         </DialogContent>
