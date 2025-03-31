@@ -1,182 +1,109 @@
-# Deploying to Netlify
+# Netlify Deployment Guide
 
-This guide provides step-by-step instructions to deploy your Klede Waitlist application to Netlify.
+This document provides step-by-step instructions for deploying the frontend portion of the Klede application to Netlify.
 
 ## Prerequisites
 
-1. A [Netlify](https://netlify.com) account
-2. A PostgreSQL database from one of these providers:
-   - [Neon](https://neon.tech) (Recommended - offers generous free tier)
-   - [Supabase](https://supabase.com)
-   - [Railway](https://railway.app) (PostgreSQL database)
+- The backend is already deployed to Vercel at: `https://kledenamaste-qmo8d837j-saatviks-projects-2a4aa607.vercel.app`
+- You have a Netlify account
+- You have the Netlify CLI installed: `npm install -g netlify-cli`
 
-## Option 1: Deploy via Netlify CLI (Recommended)
+## Deployment Steps
 
-### Step 1: Install Netlify CLI
-
-```bash
-npm install -g netlify-cli
-```
-
-### Step 2: Prepare Your Database
-
-1. Create a PostgreSQL database on your preferred platform
-2. Get your database connection string in the format: `postgresql://username:password@host:port/database`
-3. Make sure to enable SSL connections for your database
-
-### Step 3: Login to Netlify
+### 1. Log in to Netlify
 
 ```bash
 netlify login
 ```
 
-### Step 4: Initialize and Deploy Your Site
+This will open a browser window to authorize your Netlify account.
+
+### 2. Initialize Netlify for your project
 
 ```bash
-# Initialize Netlify site
 netlify init
+```
 
-# Build the project for Netlify
-./build-for-netlify.sh
+Follow the prompts:
+- Choose "Create & configure a new site"
+- Select your team
+- Choose a site name (or accept the default)
+- Use the default deployment settings (our `netlify.toml` configuration will be used)
 
-# Deploy to Netlify
+### 3. Set up Environment Variables
+
+You need to set the environment variables needed for your application:
+
+```bash
+# Set the API URL to point to your Vercel backend
+netlify env:set VITE_API_URL https://kledenamaste-qmo8d837j-saatviks-projects-2a4aa607.vercel.app
+
+# If you're using the same database for both frontend and backend:
+netlify env:set DATABASE_URL your-database-url
+
+# Set a secure session secret
+netlify env:set SESSION_SECRET your-secure-session-secret
+```
+
+Alternatively, you can set these variables in the Netlify dashboard:
+1. Go to Site settings > Build & deploy > Environment
+2. Add the environment variables there
+
+### 4. Deploy Your Site
+
+```bash
 netlify deploy --prod
 ```
 
-### Step 5: Set Environment Variables
+This will build your site according to the configuration in `netlify.toml` and deploy it to production.
 
-```bash
-# Set environment variables
-netlify env:set DATABASE_URL "your-database-connection-string"
-netlify env:set SESSION_SECRET "your-random-session-secret"
-netlify env:set NODE_ENV "production"
+### 5. Update CORS Settings (if needed)
+
+After your Netlify site is deployed, you'll need to update the CORS settings in your Vercel backend to allow requests from your Netlify domain:
+
+1. Get your Netlify domain (e.g., `https://your-app.netlify.app`)
+2. Update the `allowedOrigins` array in `api/index.ts` in your Vercel project
+3. Re-deploy your Vercel project
+
+```typescript
+// api/index.ts
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'https://your-app.netlify.app' // Your Netlify domain
+];
 ```
 
-### Step 6: Push Database Schema
+## Testing Your Deployment
 
-There are multiple ways to deploy your database schema:
-
-**Option 1: Push schema directly from your machine**
-```bash
-# Make sure DATABASE_URL is set correctly in your .env file
-npm run db:push
-```
-
-**Option 2: Use the built-in migration function after deployment**
-```bash
-# Invoke the db-migrate function through Netlify CLI
-netlify functions:invoke db-migrate --no-identity
-```
-
-**Option 3: Automatic migrations during build**
-If you've set DATABASE_URL in your Netlify environment variables, the build-for-netlify.sh script will automatically attempt to run migrations during deployment.
-
-## Option 2: Deploy via Netlify Dashboard
-
-### Step 1: Prepare Repository
-
-1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
-2. Make sure your repository is public or you've connected Netlify to your Git provider
-
-### Step 2: Create a New Site in Netlify
-
-1. Log in to your Netlify account
-2. Click "New site from Git"
-3. Select your repository
-4. Configure build settings:
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-   - Functions directory: `netlify/functions`
-
-### Step 3: Configure Environment Variables
-
-1. In your site dashboard, go to "Site settings" > "Environment variables"
-2. Add the following environment variables:
-   - `DATABASE_URL`: Your PostgreSQL connection string
-   - `SESSION_SECRET`: A random string for session security
-   - `NODE_ENV`: Set to "production"
-
-### Step 4: Deploy the Site
-
-1. Trigger a manual deploy from the Netlify dashboard
-2. Once deployed, use Netlify CLI to run the database migration:
-   ```bash
-   netlify login
-   netlify link
-   netlify functions:invoke db-migrate --no-identity
-   ```
-
-## Verifying Your Deployment
-
-1. Open your deployed application URL
-2. Test the waitlist form by submitting your email
-3. Test the admin panel by navigating to `/admin` and logging in with:
-   - Username: `admin`
-   - Password: `admin`
-4. Check that emails are sent correctly when users sign up
+1. Visit your Netlify site URL
+2. Make sure the frontend can successfully connect to the backend API
+3. Test the waitlist signup functionality
+4. Test the admin login and dashboard
 
 ## Troubleshooting
 
+### CORS Issues
+
+If you encounter CORS errors:
+1. Check that your Netlify domain is added to the `allowedOrigins` array in the Vercel backend
+2. Verify that the `VITE_API_URL` environment variable is set correctly in Netlify
+3. Make sure the frontend code is using the correct URL via `getApiUrl()` function
+
+### API Connection Issues
+
+If the frontend can't connect to the backend:
+1. Check that the `VITE_API_URL` environment variable is set correctly
+2. Verify that the Vercel backend is running properly
+3. Test the API endpoints directly using a tool like Postman or curl
+
 ### Database Connection Issues
 
-If you encounter database connection errors:
+If the application has database errors:
+1. Ensure the `DATABASE_URL` environment variable is set correctly on both Vercel and Netlify
+2. Check that the database server is accessible from both Vercel and Netlify
+3. Verify that the database schema is properly set up
 
-1. Verify your `DATABASE_URL` is correct in Netlify environment variables
-2. Make sure your database accepts connections from Netlify's IPs
-3. If using Neon/Supabase, ensure you've enabled SSL connections
-4. Check if your database requires a specific connection string format
+## Maintenance
 
-### Database Migration Issues
-
-If you're encountering "ECONNREFUSED" errors when running `db:push`:
-
-1. **Local machine errors**: 
-   - If running locally, ensure your PostgreSQL server is running on the expected port
-   - Update your .env file with the correct DATABASE_URL
-   - For cloud databases, make sure your local IP is allowed in the database firewall settings
-
-2. **Netlify environment errors**:
-   - Check the DATABASE_URL in Netlify environment variables
-   - Use the built-in migration function: `netlify functions:invoke db-migrate --no-identity`
-   - Check the function logs in Netlify dashboard for detailed error messages
-
-### Function Errors
-
-If Netlify Functions are not working:
-
-1. Check the function logs in the Netlify dashboard
-2. Verify the `netlify.toml` configuration
-3. Make sure your API routes match what the client is calling
-4. The project now uses `api-standalone.cjs` for serverless functions to avoid ESM/CJS compatibility issues
-   - This file uses CommonJS format (.cjs extension) to be compatible with Node.js module system
-   - API routes should point to `/.netlify/functions/api-standalone.cjs` in production
-
-### Build Errors
-
-If your deployment fails to build:
-
-1. Check the build logs for errors
-2. Make sure all dependencies are correctly specified in package.json
-3. Verify your build script and publish directory settings
-4. ESM/CJS Compatibility Issues:
-   - If you see "Top-level await is not supported with 'cjs' output format" errors:
-     - These are fixed by using the CommonJS function in `api-standalone.cjs`
-     - The `.cjs` extension tells Node.js to use CommonJS module format
-     - The original api.ts file has been renamed to avoid build conflicts
-   - If you see "CommonJS 'exports' variable treated as global" warnings:
-     - These are expected and don't affect functionality when using .cjs extension
-5. If you see dependency errors (like missing @babel/preset-typescript or lightningcss):
-   - These dependencies are now explicitly installed in the build process
-   - The build-for-netlify.sh script handles installing these dependencies
-
-## Custom Domains
-
-To add a custom domain to your Netlify site:
-
-1. Go to "Site settings" > "Domain management"
-2. Click "Add custom domain"
-3. Follow the instructions to configure DNS settings
-
-## Congratulations!
-
-Your Klede Waitlist application is now live on Netlify! 🎉
+Remember to update both the Vercel backend and Netlify frontend when making changes to your application. They need to be deployed separately but must remain in sync.

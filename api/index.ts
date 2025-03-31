@@ -18,12 +18,12 @@ const app = express();
 
 // Add CORS headers for Vercel deployment
 app.use((req, res, next) => {
-  // Allow requests from Netlify frontend domain
-  // In production, replace * with your Netlify domain (e.g. https://your-app.netlify.app)
+  // Allow requests from Netlify frontend domain and local development
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5000',
-    'https://your-app.netlify.app' // Replace with your actual Netlify domain
+    // Your Netlify frontend will need to be added here after deployment
+    // Example: 'https://kledeapp.netlify.app'
   ];
   
   const origin = req.headers.origin;
