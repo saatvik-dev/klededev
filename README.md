@@ -1,6 +1,6 @@
 # Klede Waitlist Application
 
-A sleek, minimalist waitlist platform designed for exclusive collection access.
+A sleek, minimalist waitlist platform designed for exclusive collection access, offering smooth and engaging user interactions.
 
 ## Features
 
@@ -8,6 +8,7 @@ A sleek, minimalist waitlist platform designed for exclusive collection access.
 - Admin panel for managing waitlist entries
 - Custom email notifications
 - Responsive design
+- Separate backend and frontend deployments
 
 ## Tech Stack
 
@@ -15,6 +16,17 @@ A sleek, minimalist waitlist platform designed for exclusive collection access.
 - **Backend**: Express.js, Node.js
 - **Database**: PostgreSQL with Drizzle ORM
 - **Email Service**: Nodemailer
+- **Deployment**: Vercel (backend) + Netlify (frontend)
+
+## Project Structure
+
+The application is designed with a clear separation between the backend and frontend:
+
+- **Backend**: API endpoints, database operations, and email services (`api/` and `server/` directories)
+- **Frontend**: React components, pages, and UI (`client/` directory)
+- **Shared**: Common code like database schemas (`shared/` directory)
+
+For detailed architecture information, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Getting Started
 
@@ -46,48 +58,25 @@ A sleek, minimalist waitlist platform designed for exclusive collection access.
 
 ## Deployment
 
-This project is configured for easy deployment to Netlify.
+This project is configured for deployment with a split architecture:
 
-### Deploy to Netlify
+- **Backend**: Deployed to Vercel
+- **Frontend**: Deployed to Netlify
 
-1. Install the Netlify CLI:
-   ```
-   npm install -g netlify-cli
-   ```
+This separation allows for better scalability, independent updates, and takes advantage of each platform's strengths.
 
-2. Login to Netlify:
-   ```
-   netlify login
-   ```
+### Deployment Guides
 
-3. Initialize your Netlify site:
-   ```
-   netlify init
-   ```
+- For detailed instructions on deploying both parts, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- For Vercel-specific backend deployment: [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
+- For Netlify-specific frontend deployment: [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md)
 
-4. Build the project for Netlify:
-   ```
-   ./build-for-netlify.sh
-   ```
+## Documentation
 
-5. Deploy to Netlify:
-   ```
-   netlify deploy --prod
-   ```
-
-6. Set up environment variables:
-   ```
-   netlify env:set DATABASE_URL "your-database-connection-string"
-   netlify env:set SESSION_SECRET "your-random-session-secret"
-   netlify env:set NODE_ENV "production"
-   ```
-
-7. Push the database schema:
-   ```
-   npm run db:push
-   ```
-
-For detailed deployment instructions, refer to [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Backend Structure](docs/BACKEND_STRUCTURE.md)
+- [Frontend Structure](docs/FRONTEND_STRUCTURE.md)
+- [Deployment Guide](DEPLOYMENT_GUIDE.md)
 
 ## Admin Access
 

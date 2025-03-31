@@ -18,9 +18,24 @@ const app = express();
 
 // Add CORS headers for Vercel deployment
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Allow requests from Netlify frontend domain
+  // In production, replace * with your Netlify domain (e.g. https://your-app.netlify.app)
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'https://your-app.netlify.app' // Replace with your actual Netlify domain
+  ];
+  
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();

@@ -10,24 +10,35 @@ async function throwIfResNotOk(res: Response) {
 /**
  * Helper function to get the correct API URL for both development and production
  * In development, API calls go directly to the path
- * In production on Netlify, API calls go to /.netlify/functions/api-standalone
+ * In production, API calls go to the configured backend URL (Vercel) for API requests
+ * and to the regular URL for non-API requests
  */
 function getApiUrl(path: string): string {
-  // Make sure path starts with a slash and remove any leading 'api'
+  // Make sure path starts with a slash
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
   // If running in a browser and we're in production
   if (typeof window !== 'undefined' && import.meta.env.PROD) {
-    const baseUrl = window.location.origin;
+    // Check if we have a specific backend API URL configured
+    const backendApiUrl = import.meta.env.VITE_API_URL;
     
-    // For API paths, remap to Netlify Functions path
+    // For API paths, use the backend URL if available
     if (normalizedPath.startsWith('/api/')) {
-      // Change /api/something to /.netlify/functions/api-standalone.cjs/something
-      return `${baseUrl}/.netlify/functions/api-standalone.cjs${normalizedPath.substring(4)}`;
+      if (backendApiUrl) {
+        // If we have a specific backend API URL, use that
+        const apiBaseUrl = backendApiUrl.endsWith('/') 
+          ? backendApiUrl.slice(0, -1) 
+          : backendApiUrl;
+        return `${apiBaseUrl}${normalizedPath}`;
+      } else {
+        // Fall back to the Netlify Functions path if no specific backend is configured
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/.netlify/functions/api-standalone.cjs${normalizedPath.substring(4)}`;
+      }
     }
     
     // For non-API paths, just use the normal URL
-    return `${baseUrl}${normalizedPath}`;
+    return `${window.location.origin}${normalizedPath}`;
   }
   
   // In development mode, just use the path directly
