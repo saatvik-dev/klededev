@@ -29,7 +29,7 @@
   "builds": [
     {
       "src": "api/index.ts",
-      "use": "@vercel/node@18.18.0"
+      "use": "@vercel/node"
     }
   ],
   "env": {
