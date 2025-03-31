@@ -1,112 +1,103 @@
-# Klede Waitlist Platform
+# Klede Waitlist Application
 
-A sleek, minimalist waitlist platform designed for exclusive collection access, offering smooth and engaging user interactions.
+A sleek, minimalist waitlist platform designed for exclusive collection access.
+
+## Features
+
+- User-friendly waitlist signup form
+- Admin panel for managing waitlist entries
+- Custom email notifications
+- Responsive design
 
 ## Tech Stack
 
-- React.js frontend with advanced UI interactions
-- Supabase backend for robust data management
-- Tailwind CSS for responsive styling
-- TypeScript for type safety
-- GitHub Pages static deployment option
-- Netlify/Vercel serverless functions support
+- **Frontend**: React.js, Tailwind CSS, Shadcn UI
+- **Backend**: Express.js, Node.js
+- **Database**: PostgreSQL with Drizzle ORM
+- **Email Service**: Nodemailer
 
-## Local Development
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- PostgreSQL database
+
+### Installation
 
 1. Clone the repository
 2. Install dependencies:
    ```
    npm install
    ```
-3. Start the development server:
+3. Create a `.env` file with the following variables:
+   ```
+   DATABASE_URL=postgresql://username:password@localhost:5432/database
+   SESSION_SECRET=your_session_secret
+   ```
+4. Push the database schema:
+   ```
+   npm run db:push
+   ```
+5. Start the development server:
    ```
    npm run dev
    ```
-4. Open your browser and navigate to `http://localhost:5000`
 
-## Deploying to GitHub Pages
+## Deployment
 
-This project can be deployed as a static site to GitHub Pages with the following steps:
+This project is configured for easy deployment to Netlify.
 
-### Method 1: Automated Deployment
+### Deploy to Netlify
 
-Use our automated deployment script which handles everything for you:
-
-```
-node deploy-to-github.js
-```
-
-This script will:
-1. Check if Git is initialized
-2. Ask for your GitHub repository URL if not already configured
-3. Build the static site with the correct base path
-4. Deploy it to GitHub Pages automatically
-
-### Method 2: Manual Deployment
-
-If you prefer a more manual approach:
-
-1. Build the static version of the site:
+1. Install the Netlify CLI:
    ```
-   node build-gh-pages.js
-   ```
-2. Deploy to GitHub Pages:
-   ```
-   npx gh-pages -d dist/public
+   npm install -g netlify-cli
    ```
 
-### Method 3: GitHub Actions
+2. Login to Netlify:
+   ```
+   netlify login
+   ```
 
-This repository includes a GitHub Actions workflow file (`.github/workflows/github-pages.yml`) that will automatically deploy the site to GitHub Pages whenever you push to the main branch.
+3. Initialize your Netlify site:
+   ```
+   netlify init
+   ```
 
-To use it:
-1. Push your code to GitHub
-2. Go to your repository's Settings tab
-3. Navigate to Pages
-4. Select "GitHub Actions" as the source
-5. Your site will be automatically deployed with each push to main
+4. Build the project for Netlify:
+   ```
+   ./build-for-netlify.sh
+   ```
 
-### Demo Mode on GitHub Pages
+5. Deploy to Netlify:
+   ```
+   netlify deploy --prod
+   ```
 
-When running on GitHub Pages, the application operates in a "static demo mode" with the following features:
+6. Set up environment variables:
+   ```
+   netlify env:set DATABASE_URL "your-database-connection-string"
+   netlify env:set SESSION_SECRET "your-random-session-secret"
+   netlify env:set NODE_ENV "production"
+   ```
 
-- In-memory data storage (changes will be lost on page refresh)
-- Admin login is available with username: `admin` and password: `admin`
-- Email functionality is simulated (no actual emails are sent)
+7. Push the database schema:
+   ```
+   npm run db:push
+   ```
 
-## Admin Features
+For detailed deployment instructions, refer to [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
 
-1. Login at `/admin` with credentials
-2. View all waitlist entries
-3. Send promotional emails
-4. Send launch announcement emails
-5. Delete waitlist entries
+## Admin Access
 
-## Technical Implementation
+Access the admin panel at `/admin` with the following credentials:
 
-### GitHub Pages Deployment Architecture
+- Username: `admin`
+- Password: `admin`
 
-To make this dynamic application work in GitHub Pages' static hosting environment, the following adaptations were made:
+> ⚠️ **Important**: Change the default admin credentials for production use.
 
-1. **Static Data Service**: 
-   - Created a client-side data store in `client/src/lib/staticData.ts` to simulate backend API responses
-   - Implemented mock versions of all API endpoints with proper response structures
+## License
 
-2. **API Request Routing**:
-   - Modified `client/src/lib/queryClient.ts` to detect GitHub Pages environments
-   - Added conditional logic to route API requests to the static data service when on GitHub Pages
-
-3. **Base Path Handling**:
-   - Added support for repository-based URLs in `vite.config.static.ts`
-   - Implemented base path adjustment in the React Router component
-   - Created a 404.html redirect for SPA routing
-
-4. **Build Configuration**:
-   - Created a dedicated static build configuration
-   - Added path resolution for GitHub Pages subdirectory hosting
-
-### Deployment Options
-
-- **GitHub Pages** - For showcasing the UI and static demo functionality
-- **Netlify/Vercel** - For full dynamic functionality with serverless backend
-- **Self-Hosted** - For complete control with Express backend
+MIT
