@@ -2,11 +2,6 @@
   "version": 2,
   "buildCommand": "bash ./build-for-vercel.sh",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/**": {
-      "runtime": "@vercel/node@2.15.3"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -34,7 +29,7 @@
   "builds": [
     {
       "src": "api/index.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node@18.18.0"
     }
   ],
   "env": {
