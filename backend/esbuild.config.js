@@ -32,20 +32,30 @@ const commonOptions = {
     'process.env.NODE_ENV': '"production"'
   },
   outbase: '.',
-  outdir: 'dist'
+  outdir: 'dist',
+  loader: {
+    '.ts': 'ts'
+  }
 };
 
-// Build all files in one go
+// Build serverless function separately
 await build({
   ...commonOptions,
-  entryPoints: [
-    'api/index.ts',
-    'server/index.ts',
-    'server/db.ts',
-    'shared/schema.ts'
-  ],
-  outdir: 'dist',
+  entryPoints: ['api/index.ts'],
+  outdir: 'dist/api',
+  bundle: true,
   banner: {
     js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
   }
+});
+
+// Build server files
+await build({
+  ...commonOptions,
+  entryPoints: [
+    'server/index.ts',
+    'server/db.ts',
+    '../shared/schema.ts'
+  ],
+  outdir: 'dist/server'
 }); 

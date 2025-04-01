@@ -30,8 +30,10 @@
         "includeFiles": [
           "backend/dist/**/*",
           "backend/server/**/*",
-          "backend/shared/**/*",
-          "shared/**/*"
+          "backend/api/**/*",
+          "shared/**/*",
+          "backend/package.json",
+          "backend/tsconfig.json"
         ]
       }
     }
