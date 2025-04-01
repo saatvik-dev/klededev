@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Klede Waitlist Application Backend",
   "main": "server/index.ts",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "tsc",
-    "start": "node dist/server/index.js",
+    "build": "node esbuild.config.js",
+    "start": "node dist/index.js",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio"
   },
@@ -40,6 +41,7 @@
     "@types/passport-local": "^1.0.36",
     "@types/pg": "^8.10.3",
     "@types/ws": "^8.5.7",
+    "esbuild": "^0.19.0",
     "tsx": "^3.14.0",
     "typescript": "^5.2.2"
   }

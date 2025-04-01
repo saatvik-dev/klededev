@@ -10,9 +10,15 @@ function createExpressApp() {
 
   // Add CORS headers for all deployments
   app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+    const origin = req.headers.origin;
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
     
     if (req.method === 'OPTIONS') {
       return res.status(200).end();
@@ -105,11 +111,10 @@ if (process.env.TS_NODE_DEV === 'true' || process.argv[1]?.endsWith('server/inde
     // Start server when running directly (not in serverless environment)
     // Only attempt to listen if we have a server instance
     if (server) {
-      const port = process.env.PORT || 5000;
+      const port = process.env.PORT || 3000;
       server.listen({
         port,
-        host: "0.0.0.0",
-        reusePort: true,
+        host: "0.0.0.0"
       }, () => {
         log(`serving on port ${port}`);
       });

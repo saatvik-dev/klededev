@@ -1,15 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "bash ./build-for-vercel.sh",
-  "outputDirectory": "dist/public",
+  "buildCommand": "cd backend && npm install && npm run build",
+  "outputDirectory": "backend/dist",
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api/index.js"
     }
   ],
   "headers": [
@@ -28,8 +24,11 @@
   },
   "builds": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+      "src": "backend/server/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["shared/**"]
+      }
     }
   ],
   "env": {
