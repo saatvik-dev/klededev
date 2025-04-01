@@ -1,96 +1,149 @@
 # Netlify Deployment Guide for Klede Frontend
 
-This guide provides step-by-step instructions for deploying the Klede Collection frontend to Netlify.
+This guide provides detailed instructions for deploying the Klede frontend to Netlify.
 
 ## Prerequisites
 
-Before deploying to Netlify, ensure you have:
+Before you begin, make sure you have:
 
-1. A [Netlify account](https://app.netlify.com/signup)
-2. A GitHub repository containing your project
-3. The backend API already deployed on Vercel (or another platform)
+1. A Netlify account
+2. A Git repository with your Klede project
+3. Your backend deployed to Vercel (see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md))
+4. Node.js 18+ installed locally
 
-## Deployment Steps
+## Setup Steps
 
-### 1. Prepare your repository
+### 1. Prepare Your Project
 
-Ensure your repository contains the following files:
+Ensure your project structure has:
+- The frontend code in the `/frontend` directory
+- A valid `netlify.toml` with appropriate configuration
+- Environment variables properly referenced in your code
 
-- `frontend/netlify.toml` - Configuration file for Netlify
-- `build-for-netlify.sh` - Build script for Netlify deployment
-- Make both files executable with `chmod +x build-for-netlify.sh`
+### 2. Run the Preparation Script
 
-### 2. Connect to Netlify
+Execute the preparation script to copy necessary files:
 
-1. Log in to [Netlify](https://app.netlify.com/)
+```bash
+bash build-for-netlify.sh
+```
+
+This script will copy the shared schema to the frontend directory to ensure it's included in the build.
+
+### 3. Connect Your Repository to Netlify
+
+1. Log in to your Netlify account
 2. Click "Add new site" > "Import an existing project"
-3. Connect to your Git provider (GitHub, GitLab, etc.)
-4. Select your repository
+3. Connect to your Git provider (GitHub, GitLab, Bitbucket)
+4. Select the repository that contains your Klede project
 
-### 3. Configure build settings
+### 4. Configure Deployment Settings
 
-Configure your Netlify deployment settings:
+Set the following configuration options:
 
-| Setting | Value |
-|---------|-------|
-| Base directory | `/` |
-| Build command | `./build-for-netlify.sh` |
-| Publish directory | `.netlify_build/dist` |
+- **Base directory**: `frontend`
+- **Build command**: `npm run build`
+- **Publish directory**: `dist`
 
-### 4. Configure environment variables
+### 5. Environment Variables
 
-Add the following environment variables in Netlify's site settings:
+Add the following environment variables in the Netlify UI:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `VITE_API_URL` | URL of your backend API | `https://klede-api.vercel.app` |
+| `VITE_API_URL` | The URL of your Vercel backend | `https://your-backend.vercel.app` |
 
-To add environment variables:
-1. Go to Site settings > Build & deploy > Environment
-2. Click "Edit variables"
-3. Add the required variables
+### 6. Deploy
 
-### 5. Deploy your site
+1. Click "Deploy site" to start the deployment process
+2. Netlify will build and deploy your frontend
+3. Once complete, you'll receive a deployment URL (e.g., `https://klede-waitlist.netlify.app`)
 
-1. Click "Deploy site"
-2. Wait for the build process to complete (this can take a few minutes)
-3. Once deployed, Netlify will provide a URL for your site (e.g., `https://klede-collection.netlify.app`)
+### 7. Verify the Deployment
 
-### 6. Set up a custom domain (optional)
+1. Visit your Netlify URL
+2. Verify that the waitlist signup form works correctly
+3. Test other frontend functionality
 
-1. Go to Site settings > Domain management
+## Configure Custom Domain (Optional)
+
+To use a custom domain:
+
+1. Go to "Site settings" > "Domain management"
 2. Click "Add custom domain"
-3. Follow the instructions to configure your domain
+3. Enter your domain name
+4. Follow the DNS configuration instructions
+
+## Configure Redirects and Headers
+
+The `netlify.toml` file in your frontend directory includes:
+
+1. **API Redirects**: Forwards all `/api/*` requests to your Vercel backend
+2. **SPA Redirects**: Ensures your React app handles client-side routing correctly
+
+If you need to add additional redirects or headers:
+
+1. Edit the `netlify.toml` file in your frontend directory
+2. Add the necessary redirect or header rules
+3. Redeploy the site
+
+Example of CORS headers for your API:
+
+```toml
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept"
+```
 
 ## Continuous Deployment
 
-By default, Netlify will automatically deploy your site whenever you push changes to your repository. You can configure specific branches for deployment in the build settings.
+Netlify automatically sets up continuous deployment:
+
+1. Every push to your main branch triggers a new deployment
+2. For pull requests, Netlify creates preview deployments
+3. You can configure deployment settings for different branches
 
 ## Troubleshooting
 
-### Build failures
+### Common Issues
 
-If your build fails, check the build logs on Netlify for specific errors:
+1. **Build Failures**:
+   - Check Netlify build logs for errors
+   - Ensure all dependencies are correctly installed
+   - Verify your build command is working locally
 
-1. Go to the Deploys tab
-2. Click on the failed deploy
-3. Check the "Deploy log" for error messages
+2. **API Connection Issues**:
+   - Ensure `VITE_API_URL` is correctly set
+   - Check CORS settings on your Vercel backend
+   - Verify API paths in your frontend code
 
-Common issues:
-- Missing environment variables
-- Errors in the build script
-- Incompatible dependencies
+3. **Routing Issues**:
+   - Ensure your `netlify.toml` has proper redirects for client-side routing
+   - Check that your React router is configured correctly
+   - Test navigation on different routes
 
-### API Connection Issues
+## Performance Optimization
 
-If the frontend cannot connect to the backend API:
+To optimize your Netlify site:
 
-1. Verify the `VITE_API_URL` environment variable is set correctly
-2. Check CORS settings on your backend server
-3. Ensure your backend is responding correctly
+1. **Asset Optimization**:
+   - Enable Netlify's asset optimization in site settings
+   - Configure appropriate cache headers for static assets
 
-## Resources
+2. **Build Caching**:
+   - Use Netlify's build plugins to cache dependencies
+   - Optimize your build scripts for faster builds
 
-- [Netlify Docs](https://docs.netlify.com/)
-- [Environment Variables in Netlify](https://docs.netlify.com/configure-builds/environment-variables/)
-- [Custom Domains in Netlify](https://docs.netlify.com/domains-https/custom-domains/)
+3. **Serverless Functions** (if needed):
+   - Use Netlify Functions for backend functionality that can't be handled by Vercel
+   - Create functions in the `netlify/functions` directory
+
+## Additional Resources
+
+- [Netlify Documentation](https://docs.netlify.com/)
+- [Netlify Build Configuration](https://docs.netlify.com/configure-builds/overview/)
+- [Netlify Redirects and Rewrites](https://docs.netlify.com/routing/redirects/)
+- [Netlify Environment Variables](https://docs.netlify.com/configure-builds/environment-variables/)

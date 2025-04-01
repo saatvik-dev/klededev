@@ -1,7 +1,6 @@
-import { db } from './db';
-import { eq } from 'drizzle-orm';
-import { users, waitlistEntries } from '@shared/schema';
-import type { User, InsertUser, WaitlistEntry, InsertWaitlist } from '@shared/schema';
+import { db } from "./db";
+import { InsertUser, InsertWaitlist, User, WaitlistEntry, users, waitlistEntries } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Interface for storage operations
@@ -23,18 +22,18 @@ export interface IStorage {
  */
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    const results = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return results[0];
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const results = await db.select().from(users).where(eq(users.username, username)).limit(1);
-    return results[0];
+    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const results = await db.insert(users).values(insertUser).returning();
-    return results[0];
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   async getAllWaitlistEntries(): Promise<WaitlistEntry[]> {
@@ -42,18 +41,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | undefined> {
-    const results = await db.select().from(waitlistEntries).where(eq(waitlistEntries.email, email)).limit(1);
-    return results[0];
+    const result = await db.select().from(waitlistEntries).where(eq(waitlistEntries.email, email)).limit(1);
+    return result[0];
   }
 
   async addToWaitlist(entry: InsertWaitlist): Promise<WaitlistEntry> {
-    const results = await db.insert(waitlistEntries).values(entry).returning();
-    return results[0];
+    const result = await db.insert(waitlistEntries).values(entry).returning();
+    return result[0];
   }
 
   async deleteWaitlistEntry(id: number): Promise<boolean> {
-    const results = await db.delete(waitlistEntries).where(eq(waitlistEntries.id, id)).returning();
-    return results.length > 0;
+    const result = await db.delete(waitlistEntries).where(eq(waitlistEntries.id, id)).returning();
+    return result.length > 0;
   }
 }
 
@@ -72,11 +71,10 @@ class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentWaitlistId = 1;
 
-    // Add a default admin user
+    // Add default admin user
     this.createUser({
-      username: 'admin',
-      password: 'password', // In production, this would be hashed
-      isAdmin: true
+      username: "admin",
+      password: "admin123"
     }).catch(console.error);
   }
 
@@ -85,66 +83,46 @@ class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
-      if (user.username === username) {
-        return user;
-      }
-    }
-    return undefined;
+    return Array.from(this.users.values()).find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const createdAt = new Date();
-    
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      createdAt, 
-      isAdmin: insertUser.isAdmin || false 
-    };
-    
+    const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
   }
 
   async getAllWaitlistEntries(): Promise<WaitlistEntry[]> {
-    return Array.from(this.waitlist.values());
+    return Array.from(this.waitlist.values()).sort((a, b) => 
+      a.createdAt.getTime() - b.createdAt.getTime()
+    );
   }
 
   async getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | undefined> {
-    for (const entry of this.waitlist.values()) {
-      if (entry.email === email) {
-        return entry;
-      }
-    }
-    return undefined;
+    return Array.from(this.waitlist.values()).find(entry => entry.email === email);
   }
 
   async addToWaitlist(entry: InsertWaitlist): Promise<WaitlistEntry> {
     const id = this.currentWaitlistId++;
-    const createdAt = new Date();
-    
     const waitlistEntry: WaitlistEntry = { 
       ...entry, 
       id, 
-      createdAt,
-      name: entry.name || null,
-      referralSource: entry.referralSource || null,
-      hasReceivedWelcomeEmail: false,
-      subscriberCount: 0
+      createdAt: new Date() 
     };
-    
     this.waitlist.set(id, waitlistEntry);
     return waitlistEntry;
   }
 
   async deleteWaitlistEntry(id: number): Promise<boolean> {
+    if (!this.waitlist.has(id)) {
+      return false;
+    }
     return this.waitlist.delete(id);
   }
 }
 
-// Choose the appropriate storage implementation based on the environment
-export const storage = process.env.DATABASE_URL 
-  ? new DatabaseStorage() 
+// Choose storage implementation based on environment
+export const storage = process.env.DATABASE_URL
+  ? new DatabaseStorage()
   : new MemStorage();

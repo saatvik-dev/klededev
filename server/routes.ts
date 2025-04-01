@@ -1,13 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
-  emailSchema, 
-  insertWaitlistSchema,
-  completeTaskSchema,
-  LEVEL_THRESHOLDS,
-  PREDEFINED_TASKS
-} from "@shared/schema";
+import { emailSchema, insertWaitlistSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import session from "express-session";
@@ -33,9 +27,6 @@ const authenticateAdmin = (req: Request, res: Response, next: Function) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server | null> {
-  // Initialize gamification system
-  await storage.initializeGamificationSystem();
-  
   // Configure session
   app.use(
     session({
@@ -66,21 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
         });
       }
       
-      // Check referral code if provided
-      let referredBy = null;
-      if (validatedData.referralCode) {
-        const referrer = await storage.getWaitlistEntryByReferralCode(validatedData.referralCode);
-        if (referrer) {
-          referredBy = validatedData.referralCode;
-        }
-      }
-      
       // Add to waitlist
       const entry = await storage.addToWaitlist({
-        email: validatedData.email,
-        name: req.body.name,
-        referralSource: req.body.referralSource,
-        referredBy
+        email: validatedData.email
       });
       
       // Send welcome email (async - don't wait for it to complete)
@@ -235,185 +214,6 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
       res.status(500).json({ message: "Failed to send launch announcement emails" });
     }
   });
-
-  // ---------- GAMIFICATION ROUTES ----------
-  
-  // Get a user's waitlist profile with gamification data
-  app.get("/api/waitlist/profile", async (req, res) => {
-    try {
-      const { email } = req.query;
-      
-      if (!email || typeof email !== 'string') {
-        return res.status(400).json({ message: "Email is required" });
-      }
-      
-      const entry = await storage.getWaitlistEntryByEmail(email);
-      if (!entry) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Get rewards available for the user's level
-      const rewards = await storage.getRewardsByLevel(entry.level || 1);
-      
-      // Get active tasks
-      const tasks = await storage.getActiveTasks();
-      
-      // Calculate progress to next level
-      const currentLevel = entry.level || 1;
-      const currentPoints = entry.points || 0;
-      let nextLevelPoints = 0;
-      let levelProgress = 100; // Default to 100% if at max level
-      
-      const nextLevelThreshold = LEVEL_THRESHOLDS.find(lt => lt.level === currentLevel + 1);
-      if (nextLevelThreshold) {
-        nextLevelPoints = nextLevelThreshold.requiredPoints;
-        const prevLevelPoints = LEVEL_THRESHOLDS.find(lt => lt.level === currentLevel)?.requiredPoints || 0;
-        const pointsForCurrentLevel = currentPoints - prevLevelPoints;
-        const pointsNeededForNextLevel = nextLevelPoints - prevLevelPoints;
-        levelProgress = Math.min(Math.round((pointsForCurrentLevel / pointsNeededForNextLevel) * 100), 100);
-      }
-      
-      // Format the response with gamification data
-      const response = {
-        ...entry,
-        tasks: tasks.map(task => ({
-          ...task,
-          completed: entry.taskCompletions && entry.taskCompletions[task.id.toString()] === true
-        })),
-        rewards,
-        gamification: {
-          currentLevel,
-          currentPoints,
-          nextLevelPoints,
-          levelProgress,
-          unlockedRewards: entry.unlockedRewards || []
-        }
-      };
-      
-      res.json(response);
-    } catch (error) {
-      console.error("Error getting waitlist profile:", error);
-      res.status(500).json({ message: "Failed to get waitlist profile" });
-    }
-  });
-  
-  // Get referral information 
-  app.get("/api/waitlist/referral/:referralCode", async (req, res) => {
-    try {
-      const { referralCode } = req.params;
-      
-      const entry = await storage.getWaitlistEntryByReferralCode(referralCode);
-      if (!entry) {
-        return res.status(404).json({ message: "Invalid referral code" });
-      }
-      
-      // Return limited information about the referrer
-      res.json({
-        referralCode,
-        referrerName: entry.name,
-        valid: true
-      });
-    } catch (error) {
-      console.error("Error getting referral info:", error);
-      res.status(500).json({ message: "Failed to get referral information" });
-    }
-  });
-  
-  // Complete a task
-  app.post("/api/waitlist/complete-task", async (req, res) => {
-    try {
-      const validatedData = completeTaskSchema.parse(req.body);
-      
-      const entry = await storage.getWaitlistEntryByEmail(validatedData.email);
-      if (!entry) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Try to complete the task
-      const updatedEntry = await storage.completeTask(validatedData.email, validatedData.taskId);
-      
-      // Check if the task was already completed
-      const wasCompleted = entry.taskCompletions && 
-                         entry.taskCompletions[validatedData.taskId.toString()] === true;
-      
-      // Check if the user leveled up
-      const levelUpResult = await storage.checkLevelUp(validatedData.email);
-      
-      res.json({
-        success: true,
-        alreadyCompleted: wasCompleted,
-        updatedEntry,
-        levelUp: levelUpResult.leveledUp,
-        newLevel: levelUpResult.newLevel,
-        unlockedRewards: levelUpResult.unlockedRewards
-      });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const validationError = fromZodError(error);
-        res.status(400).json({ message: validationError.message });
-      } else {
-        console.error("Error completing task:", error);
-        res.status(500).json({ message: "Failed to complete task" });
-      }
-    }
-  });
-  
-  // Get leaderboard
-  app.get("/api/waitlist/leaderboard", async (req, res) => {
-    try {
-      const entries = await storage.getAllWaitlistEntries();
-      
-      // Sort entries by points (descending)
-      const leaderboard = entries
-        .sort((a, b) => (b.points || 0) - (a.points || 0))
-        .slice(0, 10) // Top 10
-        .map(entry => ({
-          name: entry.name || 'Anonymous',
-          email: entry.email.split('@')[0] + '@***', // Mask email for privacy
-          level: entry.level || 1,
-          points: entry.points || 0
-        }));
-      
-      res.json(leaderboard);
-    } catch (error) {
-      console.error("Error getting leaderboard:", error);
-      res.status(500).json({ message: "Failed to get leaderboard" });
-    }
-  });
-  
-  // Get level system and rewards information
-  app.get("/api/waitlist/levels", async (_req, res) => {
-    try {
-      const rewards = await storage.getAllRewards();
-      
-      // Construct level system response with rewards
-      const levels = LEVEL_THRESHOLDS.map(level => {
-        const levelRewards = rewards.filter(r => r.requiredLevel === level.level);
-        return {
-          ...level,
-          rewardsDetails: levelRewards
-        };
-      });
-      
-      res.json(levels);
-    } catch (error) {
-      console.error("Error getting level system:", error);
-      res.status(500).json({ message: "Failed to get level system" });
-    }
-  });
-  
-  // Get all tasks
-  app.get("/api/waitlist/tasks", async (_req, res) => {
-    try {
-      const tasks = await storage.getActiveTasks();
-      res.json(tasks);
-    } catch (error) {
-      console.error("Error getting tasks:", error);
-      res.status(500).json({ message: "Failed to get tasks" });
-    }
-  });
-  
-  // ---------- END GAMIFICATION ROUTES ----------
 
   // In Vercel serverless environment, return null instead of HTTP server
   if (process.env.VERCEL) {

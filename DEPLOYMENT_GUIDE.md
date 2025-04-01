@@ -1,129 +1,149 @@
-# Klede Collection - Deployment Guide
+# Klede Split Deployment Guide
 
-This guide outlines the complete deployment process for the Klede Collection application, which uses a split architecture with a frontend deployed on Netlify and a backend deployed on Vercel.
+This guide provides instructions for deploying the Klede application with its split architecture: backend on Vercel and frontend on Netlify.
 
 ## Architecture Overview
 
-The Klede Collection application consists of:
+The Klede application uses a split architecture:
 
-1. **Frontend (React/Vite)**: A responsive single-page application for collecting waitlist information
-2. **Backend (Express)**: A RESTful API server handling data persistence and email notifications
-3. **Database (PostgreSQL)**: A PostgreSQL database for storing waitlist entries
+1. **Backend (API)**: Deployed on Vercel as a serverless API
+2. **Frontend**: Deployed on Netlify as a static site with client-side rendering
 
-![Architecture Diagram](https://mermaid.ink/img/pako:eNqFkk1PwzAMhv9KlBNIlNKNVhpI2w5wAcSFG-LSJqZEtInWZBqi_Hdsp2xMQnDzx7Mff5KvYNyEIEFbt3N-KwxjvPKmDvDtg2nLtTVxoIdCQW9sQ5XnKmgMCgp1Dd7vMDrG06WCWr1lxWJZzNdQaRe9c1BBf8Jy6TUUyJ1ePCvTNmHqnTnUbmvdtHdFP_aUhb1z_mTcse5x3IPf4oZdXXluHWKFg5-7MFUwOz-1jqF3NhkXO6CnW6bXTvtYlrEF3S_rJHZIv-cqpYOoYGYap5VRcZMZ5fQpS_NNSTXsMqeP6y-2sPW2gTxEDUqKDOSUZZxzwfOJHNOCi9GdiRiAjBGxSCSIaS5YwcecT9iYslyIVN8vE8nZ4OLx3dkdPFw9L2BxuX56WD_-3QNyLmcsSSnBJclGnL2-AA3JqN0)
+This split approach offers several advantages:
+- Better scalability for each component independently
+- Ability to update frontend and backend separately
+- Leveraging the strengths of each platform (Vercel for API routes, Netlify for static sites)
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+Before you begin, make sure you have:
 
-1. A GitHub repository containing your project
-2. Accounts on Netlify and Vercel 
-3. A PostgreSQL database (such as Neon, Supabase, or any PostgreSQL provider)
-4. Required environment variables (listed in the platform-specific guides)
+1. A Vercel account
+2. A Netlify account
+3. A Git repository with your Klede project
+4. A PostgreSQL database (e.g., Neon, Supabase, or any other provider)
+5. Node.js 18+ installed locally
 
 ## Deployment Process
 
-The deployment is split into two parts:
+### 1. Prepare Your Environment Variables
 
-1. **Backend deployment to Vercel**
-2. **Frontend deployment to Netlify**
+Create a `.env` file in the project root with the following variables:
 
-### Step 1: Deploy the backend to Vercel
+```
+# Database (required)
+DATABASE_URL=postgresql://username:password@hostname:port/database
 
-Follow the steps in [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) to deploy the backend API to Vercel.
+# Session (required for production)
+SESSION_SECRET=your-very-secure-session-secret
 
-Key points:
-- The backend uses Node.js with Express
-- Set up required environment variables in Vercel
-- Configure the database connection string
-- Ensure CORS is properly configured to allow requests from your frontend
+# Email configuration (optional, uses Ethereal for testing if not provided)
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_USER=your-email-username
+EMAIL_PASS=your-email-password
+EMAIL_FROM=noreply@example.com
+EMAIL_SECURE=false
+```
 
-### Step 2: Deploy the frontend to Netlify
+Note: These variables are for local development. You will need to set them separately in your Vercel and Netlify environments.
 
-After successfully deploying the backend, follow the steps in [NETLIFY_DEPLOYMENT.md](./NETLIFY_DEPLOYMENT.md) to deploy the frontend to Netlify.
+### 2. Deploy Backend to Vercel
 
-Key points:
-- Set the `VITE_API_URL` environment variable to point to your Vercel backend URL
-- Use the provided build script for deployment
-- Netlify will build and serve the frontend application
+1. Run the preparation script:
+   ```
+   bash build-for-vercel.sh
+   ```
 
-### Step 3: Test the complete application
+2. Create a new project on Vercel:
+   - Connect to your Git repository
+   - Set the root directory to `backend`
+   - Set the framework preset to "Other"
+   - Set the build command to `npm run build`
+   - Set the output directory to `dist`
 
-After deploying both parts:
+3. Configure environment variables in Vercel:
+   - `DATABASE_URL` (your PostgreSQL connection string)
+   - `SESSION_SECRET` (a secure random string)
+   - `NODE_ENV` (set to "production")
+   - Email configuration variables (if needed)
 
-1. Visit your Netlify URL
-2. Test the waitlist signup process
-3. Verify that submissions appear in the database
-4. Check that welcome emails are being sent (if configured)
+4. Deploy your backend and note the deployment URL (e.g., `https://your-backend.vercel.app`)
 
-## Environment Variables
+For detailed Vercel deployment instructions, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
 
-### Backend (Vercel)
+### 3. Deploy Frontend to Netlify
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | `postgresql://user:pass@hostname:port/db` |
-| `SESSION_SECRET` | Secret for session encryption | Yes | `random-secret-string` |
-| `CORS_ORIGIN` | Frontend URL for CORS | Yes | `https://your-app.netlify.app` |
-| `EMAIL_HOST` | SMTP server host | No | `smtp.gmail.com` |
-| `EMAIL_PORT` | SMTP server port | No | `587` |
-| `EMAIL_USER` | SMTP username | No | `your-email@example.com` |
-| `EMAIL_PASS` | SMTP password | No | `your-password` |
-| `EMAIL_FROM` | From address for emails | No | `noreply@your-domain.com` |
+1. Run the preparation script:
+   ```
+   bash build-for-netlify.sh
+   ```
 
-### Frontend (Netlify)
+2. Create a new site on Netlify:
+   - Connect to your Git repository
+   - Set the base directory to `frontend`
+   - Set the build command to `npm run build`
+   - Set the publish directory to `dist`
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `VITE_API_URL` | URL of your backend API | Yes | `https://your-api.vercel.app` |
+3. Configure environment variables in Netlify:
+   - `VITE_API_URL` (the URL of your Vercel backend from step 2)
+
+4. Deploy your frontend
+
+For detailed Netlify deployment instructions, see [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md).
+
+### 4. Configure CORS (If Needed)
+
+If you experience CORS issues, update your backend's Vercel environment variables:
+
+- `CORS_ALLOWED_ORIGINS` (comma-separated list of allowed origins, including your Netlify domain)
+
+### 5. Test Your Deployment
+
+After both deployments are complete:
+
+1. Visit your Netlify frontend URL
+2. Test the waitlist signup functionality
+3. Test the admin login using the default credentials (admin/admin123)
+4. Test all admin functionality (viewing waitlist, sending emails, etc.)
+
+## Deployment Helper
+
+This project includes a deployment helper script to guide you through the process:
+
+```
+node deploy.js
+```
 
 ## Troubleshooting
 
-### Cross-Origin (CORS) Issues
+### Backend Deployment Issues
 
-If you encounter CORS errors:
+- **Database Connection Errors**: Verify your `DATABASE_URL` is correct and that your IP is allowed in the database firewall rules.
+- **Missing Environment Variables**: Check that all required environment variables are set in Vercel.
+- **Serverless Function Timeout**: If your functions time out, consider optimizing database queries or connection pooling settings.
 
-1. Ensure `CORS_ORIGIN` in the backend matches your frontend URL exactly
-2. Check for any typos in the domain names
-3. Remember to include the protocol (https://) in the CORS configuration
+### Frontend Deployment Issues
 
-### Database Connection Issues
+- **API Connection Errors**: Make sure `VITE_API_URL` is correctly set in your Netlify environment.
+- **Build Failures**: Check Netlify build logs for errors and ensure all dependencies are correctly installed.
+- **Routing Issues**: Ensure your Netlify configuration includes proper redirects for client-side routing.
 
-If the backend can't connect to the database:
+## Updating Your Deployment
 
-1. Verify your `DATABASE_URL` is correct
-2. Ensure your database provider allows connections from Vercel's IP ranges
-3. Check if your database requires SSL connections
+After making changes to your application:
 
-### Email Sending Issues
+1. Push your changes to the Git repository
+2. Vercel and Netlify will automatically rebuild and deploy your changes
 
-If welcome emails aren't working:
+If you've made changes to the database schema, you'll need to manually migrate your production database using:
 
-1. Verify your email service provider credentials
-2. Some providers (like Gmail) require less secure app access or app passwords
-3. Check spam folders for test emails
-
-## Ongoing Maintenance
-
-### Updating the Application
-
-When you need to update your application:
-
-1. Push changes to your GitHub repository
-2. Vercel and Netlify will automatically rebuild and deploy
-3. Check deployment logs for any errors
-
-### Database Migrations
-
-For database schema changes:
-
-1. Update the schema in `shared/schema.ts`
-2. Redeploy the backend to apply migrations
-3. Be careful with destructive changes that might result in data loss
+```
+npm run db:push
+```
 
 ## Additional Resources
 
 - [Vercel Documentation](https://vercel.com/docs)
 - [Netlify Documentation](https://docs.netlify.com/)
 - [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
-- [Express.js Documentation](https://expressjs.com/)

@@ -1,121 +1,157 @@
 # Vercel Deployment Guide for Klede Backend
 
-This guide provides step-by-step instructions for deploying the Klede Collection backend API to Vercel.
+This guide provides detailed instructions for deploying the Klede backend to Vercel.
 
 ## Prerequisites
 
-Before deploying to Vercel, ensure you have:
+Before you begin, make sure you have:
 
-1. A [Vercel account](https://vercel.com/signup)
-2. A GitHub repository containing your project
-3. A PostgreSQL database (such as [Neon](https://neon.tech) or [Supabase](https://supabase.com))
+1. A Vercel account
+2. A Git repository with your Klede project
+3. A PostgreSQL database (e.g., Neon, Supabase, or any other provider)
+4. Node.js 18+ installed locally
 
-## Deployment Steps
+## Setup Steps
 
-### 1. Prepare your repository
+### 1. Prepare Your Project
 
-Ensure your repository contains the following files:
+Ensure your project structure has:
+- The backend code in the `/backend` directory
+- A valid `tsconfig.json` with proper configuration
+- A `vercel.json` file with routes configuration
+- Proper environment variable references in your code
 
-- `backend/vercel.json` - Configuration file for Vercel
-- `build-for-vercel.sh` - Build script for Vercel deployment
-- Make the build script executable with `chmod +x build-for-vercel.sh`
+### 2. Run the Preparation Script
 
-### 2. Set up your database
+Execute the preparation script to copy necessary files:
 
-1. Create a PostgreSQL database on your preferred provider
-2. Get your database connection string in the format: `postgresql://username:password@hostname:port/database`
-3. Make sure your database is accessible from Vercel's IP ranges
+```bash
+bash build-for-vercel.sh
+```
 
-### 3. Deploy to Vercel
+This script will copy the shared schema to the backend directory to ensure it's included in the deployment.
 
-#### Option 1: Using the Vercel Dashboard
+### 3. Connect Your Repository to Vercel
 
-1. Log in to [Vercel](https://vercel.com)
+1. Log in to your Vercel account
 2. Click "Add New" > "Project"
-3. Import your Git repository
-4. Configure the project:
-   - Framework Preset: "Other"
-   - Root Directory: `.` (root of the repository)
-   - Build Command: `./build-for-vercel.sh`
-   - Output Directory: `.vercel_build/dist`
-5. Add environment variables (see next section)
-6. Click "Deploy"
+3. Connect to your Git provider (GitHub, GitLab, Bitbucket)
+4. Select the repository that contains your Klede project
 
-#### Option 2: Using the Vercel CLI
+### 4. Configure Deployment Settings
 
-1. Install the Vercel CLI: `npm i -g vercel`
-2. Login to Vercel: `vercel login`
-3. Initialize the project: `vercel init`
-4. Deploy: `vercel --build-env NODE_ENV=production`
+Set the following configuration options:
 
-### 4. Configure environment variables
+- **Framework Preset**: Other
+- **Root Directory**: `backend`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Install Command**: `npm install`
 
-Add the following environment variables in Vercel's project settings:
+### 5. Environment Variables
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | `postgresql://user:pass@hostname:port/db` |
-| `SESSION_SECRET` | Secret for encrypting sessions | Yes | `your-secure-random-string` |
-| `CORS_ORIGIN` | Frontend URL for CORS | Yes | `https://klede-collection.netlify.app` |
-| `EMAIL_HOST` | SMTP server host | No | `smtp.gmail.com` |
-| `EMAIL_PORT` | SMTP server port | No | `587` |
-| `EMAIL_USER` | SMTP username | No | `your-email@example.com` |
-| `EMAIL_PASS` | SMTP password | No | `your-email-password` |
-| `EMAIL_FROM` | From address for emails | No | `noreply@your-domain.com` |
+Add the following environment variables in the Vercel UI:
 
-To add environment variables in the Vercel dashboard:
-1. Go to your project
-2. Click on "Settings" > "Environment Variables"
-3. Add each variable and its value
-4. Click "Save"
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:password@host:port/database` |
+| `SESSION_SECRET` | Secret for session encryption | `your-secure-session-secret` |
+| `NODE_ENV` | Environment mode | `production` |
+| `CORS_ALLOWED_ORIGINS` | Allowed origins for CORS | `https://your-frontend.netlify.app` |
 
-### 5. Trigger database migration
+Optional email configuration:
 
-The first deployment will automatically create the necessary database tables. 
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `EMAIL_HOST` | SMTP server hostname | `smtp.example.com` |
+| `EMAIL_PORT` | SMTP server port | `587` |
+| `EMAIL_USER` | SMTP username | `your-email-username` |
+| `EMAIL_PASS` | SMTP password | `your-email-password` |
+| `EMAIL_FROM` | From email address | `noreply@example.com` |
+| `EMAIL_SECURE` | Use SSL/TLS | `false` |
 
-If you need to manually trigger migrations:
-1. Redeploy your project
-2. Check the logs to ensure migrations run successfully
+### 6. Deploy
 
-### 6. Final configuration
+1. Click "Deploy" to start the deployment process
+2. Vercel will build and deploy your backend
+3. Once complete, you'll receive a deployment URL (e.g., `https://klede-backend.vercel.app`)
 
-1. Test your API endpoints
-2. Update your frontend configuration to point to your Vercel API URL
-3. Set up a custom domain (optional)
+### 7. Verify the Deployment
+
+Test your API endpoints:
+
+1. Visit `https://your-deployment-url.vercel.app/api/health` to check the health endpoint
+2. Test other endpoints as needed
+
+## Serverless Optimizations
+
+### Database Connection Pooling
+
+For serverless environments:
+
+1. Use the appropriate connection pooling settings in `server/db.ts`
+2. Consider using edge-optimized database drivers like `@neondatabase/serverless` for better performance
+
+### Cold Start Optimization
+
+To minimize cold start times:
+
+1. Keep your dependencies minimal
+2. Use separate files for different API routes to reduce bundle size
+3. Consider edge functions for faster cold starts
+
+## Custom Domain Setup (Optional)
+
+To use a custom domain:
+
+1. Go to your project settings in Vercel
+2. Click on "Domains"
+3. Add your custom domain
+4. Follow the DNS configuration instructions
 
 ## Continuous Deployment
 
-By default, Vercel will automatically deploy your site whenever you push changes to your repository. You can configure branch deployments in the Vercel project settings.
+Vercel automatically sets up continuous deployment:
+
+1. Every push to your main branch triggers a new deployment
+2. For pull requests, Vercel creates preview deployments
+3. You can configure deployment settings for different branches
 
 ## Troubleshooting
 
-### Database connection issues
+### Common Issues
 
-If your API cannot connect to the database:
+1. **Database Connection Errors**:
+   - Check that your `DATABASE_URL` is correct
+   - Ensure your database allows connections from Vercel's IP ranges
+   - Verify SSL settings if required by your database provider
 
-1. Verify your `DATABASE_URL` environment variable is correct
-2. Check if your database provider allows connections from Vercel's IP ranges
-3. Look for database errors in the Vercel deployment logs
+2. **Environment Variable Issues**:
+   - Ensure all required environment variables are set in Vercel
+   - Check for typos in variable names
+   - Verify that the variables are being properly accessed in your code
 
-### CORS errors
+3. **Build Failures**:
+   - Review build logs in the Vercel dashboard
+   - Ensure all dependencies are correctly listed in `package.json`
+   - Check for TypeScript compilation errors
 
-If you see CORS errors in the browser console:
+4. **Serverless Function Timeouts**:
+   - Optimize database queries to reduce execution time
+   - Consider breaking up large functions into smaller ones
+   - Use connection pooling to reduce initialization time
 
-1. Ensure `CORS_ORIGIN` matches your frontend URL exactly
-2. For development, you may need to add multiple origins separated by commas 
-3. Check if you have any proxy or CDN that changes the request origin
+## Monitoring and Logs
 
-### Email sending issues
+To monitor your application:
 
-If welcome emails are not being sent:
+1. Use the Vercel dashboard to view deployment logs
+2. Check the "Functions" tab to see serverless function metrics
+3. Consider setting up additional monitoring (like Sentry) for production use
 
-1. Verify your email configuration environment variables
-2. Check if your SMTP provider requires specific security settings or API keys
-3. For Gmail, you may need to enable "Less secure app access" or use app passwords
-
-## Resources
+## Additional Resources
 
 - [Vercel Documentation](https://vercel.com/docs)
-- [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
-- [Vercel Serverless Functions](https://vercel.com/docs/serverless-functions/introduction)
-- [Connecting Vercel to PostgreSQL](https://vercel.com/guides/postgresql-with-prisma-and-vercel)
+- [Serverless Functions](https://vercel.com/docs/concepts/functions/serverless-functions)
+- [Environment Variables](https://vercel.com/docs/concepts/projects/environment-variables)
+- [Vercel for Git](https://vercel.com/docs/concepts/git)

@@ -3,18 +3,15 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { HttpServer } from 'http';
-import { storage } from './storage';
-import { testConnection, runMigrations } from './db';
+import http, { Server as HttpServer } from 'http';
+import * as dotenv from 'dotenv';
+
+import { db, testConnection } from './db';
 import { registerRoutes } from './routes';
-import { emailService } from './emails/emailService';
+import { storage } from './storage';
 
 // Load environment variables
 dotenv.config();
-
-// Flag to track database connection status
-let dbConnected = false;
 
 /**
  * Create and configure the Express application
@@ -22,49 +19,54 @@ let dbConnected = false;
 function createExpressApp() {
   const app = express();
   
-  // Parse JSON and URL-encoded bodies
+  // Body parser middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   
-  // Configure CORS
+  // CORS configuration - needed for cross-domain requests
   const corsOptions = {
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: process.env.CORS_ALLOWED_ORIGINS ? 
+      process.env.CORS_ALLOWED_ORIGINS.split(',') : 
+      (process.env.NODE_ENV === 'production' ? false : '*'),
     credentials: true,
-    optionsSuccessStatus: 204,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   };
   app.use(cors(corsOptions));
   
-  // Configure session
+  // Session configuration
+  const sessionSecret = process.env.SESSION_SECRET || 'dev-session-secret';
+  if (process.env.NODE_ENV === 'production' && sessionSecret === 'dev-session-secret') {
+    console.warn('WARNING: Using default session secret in production. Set SESSION_SECRET environment variable.');
+  }
+  
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || 'klede-secret',
+      secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      },
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      }
     })
   );
   
-  // Configure Passport
+  // Passport configuration for admin authentication
   app.use(passport.initialize());
   app.use(passport.session());
   
-  // Configure LocalStrategy
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        
         if (!user) {
-          return done(null, false, { message: 'Incorrect username' });
+          return done(null, false, { message: 'Incorrect username.' });
         }
         
-        // In production, we would compare hashed passwords
+        // In a real app, use proper password hashing and comparison
         if (user.password !== password) {
-          return done(null, false, { message: 'Incorrect password' });
+          return done(null, false, { message: 'Incorrect password.' });
         }
         
         return done(null, user);
@@ -74,7 +76,6 @@ function createExpressApp() {
     })
   );
   
-  // Serialize and deserialize user for session
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
   });
@@ -84,16 +85,16 @@ function createExpressApp() {
       const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
-      done(error, null);
+      done(error);
     }
   });
   
-  // Error handler
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Error:', err);
-    res.status(err.status || 500).json({
-      message: err.message || 'Something went wrong',
-      error: process.env.NODE_ENV === 'development' ? err : {},
+    console.error(err);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'production' ? undefined : err.message
     });
   });
   
@@ -105,29 +106,25 @@ function createExpressApp() {
  * @param options Options for server creation
  */
 export async function createServer(options = { serverless: false }) {
-  // Create Express app
   const app = createExpressApp();
   
-  // Initialize email service
-  await emailService.initialize();
+  // Register API routes
+  const httpServer = await registerRoutes(app);
   
-  // Test database connection
-  dbConnected = await testConnection();
-  
-  if (dbConnected) {
-    // Run migrations to create/update tables
-    await runMigrations();
+  if (!options.serverless) {
+    // Test database connection
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+      console.error('Database connection failed. Server may not function correctly.');
+    }
     
-    // Register API routes
-    const httpServer = await registerRoutes(app);
-    
-    // Health check route
+    // Health check endpoint
     app.get('/api/health', (_req, res) => {
       res.status(200).json({ status: 'ok', dbConnected });
     });
     
     // Start the server if not in serverless mode
-    const port = parseInt(process.env.PORT || '3001', 10);
+    const port = process.env.PORT || 3001;
     const server = httpServer || app.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://0.0.0.0:${port}`);
     });
@@ -135,7 +132,7 @@ export async function createServer(options = { serverless: false }) {
     return { app, server };
   }
   
-  return { app, server: null };
+  return { app, server: httpServer };
 }
 
 // Start the server if this file is run directly

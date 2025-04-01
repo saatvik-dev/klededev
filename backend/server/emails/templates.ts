@@ -6,37 +6,108 @@
  * Welcome email template sent when a user joins the waitlist
  */
 export function generateWelcomeEmail(email: string): {subject: string, html: string} {
-  const subject = 'Welcome to the Klede Collection Waitlist';
+  const subject = "Welcome to the Klede Waitlist!";
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #000; font-size: 24px; margin-bottom: 10px;">KLEDE COLLECTION</h1>
-        <p style="font-style: italic; color: #666;">Modern. Timeless. Sustainable.</p>
-      </div>
-      
-      <div style="margin-bottom: 30px; line-height: 1.5;">
-        <p>Hello,</p>
-        <p>Thank you for joining the Klede Collection waitlist. We're thrilled to have you with us as we prepare for our exclusive launch.</p>
-        <p>As a waitlist member, you'll be among the first to:</p>
-        <ul style="margin-bottom: 20px;">
-          <li>Receive updates about our upcoming collections</li>
-          <li>Get early access to our products before the public release</li>
-          <li>Enjoy exclusive discounts and special offers</li>
-        </ul>
-        <p>We're working hard to create something truly special and can't wait to share it with you.</p>
-      </div>
-      
-      <div style="text-align: center; margin: 40px 0;">
-        <a href="#" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 3px; font-weight: bold;">Discover Our Story</a>
-      </div>
-      
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
-        <p>This email was sent to ${email} because you signed up for the Klede Collection waitlist.</p>
-        <p>If you believe this was a mistake, please disregard this email.</p>
-        <p>&copy; ${new Date().getFullYear()} Klede Collection. All rights reserved.</p>
-      </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Klede Waitlist</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #f8f8f8;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 1px;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    h1 {
+      color: #000;
+      margin-bottom: 20px;
+    }
+    p {
+      margin-bottom: 20px;
+    }
+    .highlight {
+      background-color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #000;
+      color: #fff;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 500;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">KLEDE</div>
     </div>
+    <div class="content">
+      <h1>Welcome to the Klede Waitlist</h1>
+      <p>Thank you for joining our exclusive waitlist! We're thrilled to have you as part of our growing community.</p>
+      
+      <div class="highlight">
+        <p>You've successfully registered with: <strong>${email}</strong></p>
+      </div>
+      
+      <p>Klede is an exclusive collection of minimalist, high-quality essentials. We're working hard to create something special, and we can't wait to share it with you.</p>
+      
+      <p>What to expect next:</p>
+      <ul>
+        <li>Exclusive previews of our upcoming collection</li>
+        <li>Early access when we launch</li>
+        <li>Special offers for waitlist members only</li>
+      </ul>
+      
+      <p>We'll keep you updated on our progress and let you know when we're ready to launch.</p>
+      
+      <p>Stay stylish,<br>The Klede Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 Klede. All rights reserved.</p>
+      <p>If you didn't sign up for the Klede waitlist, please disregard this email.</p>
+    </div>
+  </div>
+</body>
+</html>
   `;
   
   return { subject, html };
@@ -47,32 +118,105 @@ export function generateWelcomeEmail(email: string): {subject: string, html: str
  * Can be used for special announcements or offers
  */
 export function generatePromotionalEmail(email: string, customMessage: string = ""): {subject: string, html: string} {
-  const subject = 'Special Announcement from Klede Collection';
+  const subject = "Special Announcement from Klede";
+  
+  const messageSection = customMessage ? `
+    <div class="highlight">
+      <p>${customMessage}</p>
+    </div>
+  ` : '';
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #000; font-size: 24px; margin-bottom: 10px;">KLEDE COLLECTION</h1>
-        <p style="font-style: italic; color: #666;">Modern. Timeless. Sustainable.</p>
-      </div>
-      
-      <div style="margin-bottom: 30px; line-height: 1.5;">
-        <p>Hello,</p>
-        <p>We have an exciting update to share with you as a valued member of our waitlist.</p>
-        ${customMessage ? `<div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #000;">${customMessage}</div>` : ''}
-        <p>Stay tuned for more updates as we get closer to our launch date.</p>
-      </div>
-      
-      <div style="text-align: center; margin: 40px 0;">
-        <a href="#" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 3px; font-weight: bold;">Learn More</a>
-      </div>
-      
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
-        <p>This email was sent to ${email} because you signed up for the Klede Collection waitlist.</p>
-        <p>If you'd like to unsubscribe, please contact us directly.</p>
-        <p>&copy; ${new Date().getFullYear()} Klede Collection. All rights reserved.</p>
-      </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Special Announcement from Klede</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #f8f8f8;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 1px;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    h1 {
+      color: #000;
+      margin-bottom: 20px;
+    }
+    p {
+      margin-bottom: 20px;
+    }
+    .highlight {
+      background-color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #000;
+      color: #fff;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 500;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">KLEDE</div>
     </div>
+    <div class="content">
+      <h1>Special Announcement</h1>
+      <p>Hello from Klede! As a valued member of our waitlist, we wanted to share some exciting news with you.</p>
+      
+      ${messageSection}
+      
+      <p>We appreciate your continued interest in Klede and can't wait to bring you more updates soon.</p>
+      
+      <p>Thank you for your support!</p>
+      
+      <p>Best regards,<br>The Klede Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 Klede. All rights reserved.</p>
+      <p>You're receiving this email because you joined the Klede waitlist with: ${email}</p>
+    </div>
+  </div>
+</body>
+</html>
   `;
   
   return { subject, html };
@@ -83,41 +227,105 @@ export function generatePromotionalEmail(email: string, customMessage: string = 
  * Sent when the collection is officially launched
  */
 export function generateLaunchEmail(email: string): {subject: string, html: string} {
-  const subject = '🎉 The Klede Collection is Now Live!';
+  const subject = "We're Live! Klede Collection Now Available";
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #000; font-size: 24px; margin-bottom: 10px;">KLEDE COLLECTION</h1>
-        <p style="font-style: italic; color: #666;">Modern. Timeless. Sustainable.</p>
-      </div>
-      
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h2 style="font-size: 28px; margin-bottom: 15px;">We're officially launched!</h2>
-        <p style="font-size: 16px; line-height: 1.5;">The wait is over. Our collection is now available for you to explore and enjoy.</p>
-      </div>
-      
-      <div style="margin-bottom: 30px; line-height: 1.5;">
-        <p>Hello,</p>
-        <p>We're thrilled to announce that the Klede Collection is now officially live. As a valued waitlist member, you get:</p>
-        <ul style="margin-bottom: 20px;">
-          <li><strong>Early access</strong> to browse and shop before we open to the public</li>
-          <li><strong>Exclusive 15% discount</strong> on your first purchase with code <strong>WAITLIST15</strong></li>
-          <li><strong>Free shipping</strong> on orders over $100</li>
-        </ul>
-        <p>This exclusive offer is available for the next 48 hours only, so don't miss out!</p>
-      </div>
-      
-      <div style="text-align: center; margin: 40px 0;">
-        <a href="#" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 3px; font-weight: bold; display: inline-block;">Shop Now</a>
-      </div>
-      
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
-        <p>This email was sent to ${email} because you signed up for the Klede Collection waitlist.</p>
-        <p>If you'd like to unsubscribe, please contact us directly.</p>
-        <p>&copy; ${new Date().getFullYear()} Klede Collection. All rights reserved.</p>
-      </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klede Collection Now Available</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #f8f8f8;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 1px;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    h1 {
+      color: #000;
+      margin-bottom: 20px;
+    }
+    p {
+      margin-bottom: 20px;
+    }
+    .highlight {
+      background-color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #000;
+      color: #fff;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 500;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">KLEDE</div>
     </div>
+    <div class="content">
+      <h1>We're Live! 🎉</h1>
+      <p>The wait is over! We're thrilled to announce that the Klede collection is now officially available.</p>
+      
+      <div class="highlight">
+        <p>As a valued waitlist member, you get <strong>early access</strong> before we open to the general public.</p>
+      </div>
+      
+      <p>Shop now and be among the first to experience our exclusive collection of minimalist, high-quality essentials.</p>
+      
+      <a href="https://klede.com/shop" class="btn">SHOP THE COLLECTION</a>
+      
+      <p>Thank you for your patience and support throughout our journey. We couldn't have done it without you.</p>
+      
+      <p>With gratitude,<br>The Klede Team</p>
+      
+      <p>P.S. Hurry! Some items are in limited supply and may sell out quickly.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 Klede. All rights reserved.</p>
+      <p>You're receiving this email because you joined the Klede waitlist with: ${email}</p>
+    </div>
+  </div>
+</body>
+</html>
   `;
   
   return { subject, html };

@@ -1,33 +1,56 @@
 #!/bin/bash
-# Build script for Netlify deployment (frontend)
 
-echo "Building frontend for Netlify deployment..."
+# Script to prepare files for Netlify deployment
 
-# Create build directory
-mkdir -p .netlify_build
-mkdir -p .netlify_build/dist
+# Ensure script fails on any command error
+set -e
 
-# Create a clean dist directory
-rm -rf .netlify_build/dist
+echo "Preparing frontend for Netlify deployment..."
 
-# Copy frontend files to build directory
-cp -r frontend/src .netlify_build/
-cp -r shared .netlify_build/
-cp frontend/package.json .netlify_build/
-cp frontend/tsconfig.json .netlify_build/
-cp frontend/tsconfig.node.json .netlify_build/
-cp frontend/vite.config.ts .netlify_build/
-cp frontend/netlify.toml .netlify_build/
-cp -r frontend/public .netlify_build/ 2>/dev/null || :  # Ignore if public folder doesn't exist
+# Create shared directory in the frontend folder if it doesn't exist
+mkdir -p frontend/shared
 
-# Set the API URL for production
-API_URL=${VITE_API_URL:-"https://api.example.com"}
-echo "VITE_API_URL=$API_URL" > .netlify_build/.env.production
+# Copy the schema.ts file to the frontend/shared directory
+echo "Copying shared schema to frontend/shared..."
+cp shared/schema.ts frontend/shared/
 
-# Install dependencies
-cd .netlify_build && npm install
+# Check if package.json exists in frontend folder
+if [ ! -f frontend/package.json ]; then
+  echo "package.json already created in frontend folder"
+fi
 
-# Build the frontend
-cd .netlify_build && npm run build
+# Check if environment variables file exists
+if [ ! -f frontend/.env ]; then
+  echo "Creating .env template in frontend folder..."
+  
+  # Create .env template
+  cat > frontend/.env << EOF
+# API URL (required for production)
+VITE_API_URL=https://your-backend.vercel.app
+EOF
+fi
 
-echo "Frontend build for Netlify completed successfully!"
+# Make sure netlify.toml exists
+if [ ! -f frontend/netlify.toml ]; then
+  echo "Creating netlify.toml in frontend folder..."
+  
+  cat > frontend/netlify.toml << EOF
+[build]
+  base = "frontend"
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://klede-backend.vercel.app/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+EOF
+fi
+
+echo "Frontend preparation for Netlify completed!"
