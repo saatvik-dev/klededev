@@ -6,9 +6,9 @@ import cors from 'cors';
 import http, { Server as HttpServer } from 'http';
 import * as dotenv from 'dotenv';
 
-import { db, testConnection } from './db';
-import { registerRoutes } from './routes';
-import { storage } from './storage';
+import { db, testConnection } from './db.js';
+import { registerRoutes } from './routes.js';
+import { storage } from './storage.js';
 
 // Load environment variables
 dotenv.config();
@@ -124,7 +124,7 @@ export async function createServer(options = { serverless: false }) {
     });
     
     // Start the server if not in serverless mode
-    const port = process.env.PORT || 3001;
+    const port = parseInt(process.env.PORT || '3001', 10);
     const server = httpServer || app.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://0.0.0.0:${port}`);
     });

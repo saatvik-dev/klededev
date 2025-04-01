@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import * as templates from "./templates";
+import { templates } from "./templates.js";
 
 /**
  * Email Service for sending various types of emails

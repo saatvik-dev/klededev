@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { InsertUser, InsertWaitlist, User, WaitlistEntry, users, waitlistEntries } from "@shared/schema";
+import { db } from './db.js';
+import { InsertUser, InsertWaitlist, User, WaitlistEntry, users, waitlistEntries } from "@shared/schema.js";
 import { eq } from "drizzle-orm";
 
 /**
