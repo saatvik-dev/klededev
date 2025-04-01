@@ -1,40 +1,30 @@
+import express, { Request, Response } from 'express';
 import { createServer } from '../server/index.js';
-import serverless from 'serverless-http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let app: any;
-
-export default async function(req: any, res: any) {
+/**
+ * Create and configure the Express application for serverless environment
+ */
+export default async function handler(req: Request, res: Response) {
   try {
-    if (!app) {
-      console.log('Initializing serverless function...');
-      console.log('Current directory:', __dirname);
-      console.log('Root directory:', path.resolve(__dirname, '..'));
-      console.log('Process cwd:', process.cwd());
-      
-      // Set the working directory to the backend folder
-      process.chdir(path.resolve(__dirname, '..'));
-      
-      const { app: expressApp } = await createServer({ 
-        serverless: true
-      });
-      app = expressApp;
-    }
+    const { app } = await createServer({ 
+      serverless: true,
+      rootDir: path.resolve(process.cwd(), 'backend')
+    });
     
-    return serverless(app)(req, res);
+    return app(req, res);
   } catch (error) {
     console.error('Serverless function error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('Current directory:', __dirname);
-    console.error('Process cwd:', process.cwd());
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     
-    return res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.stack : undefined : undefined
+      message: process.env.NODE_ENV === 'production' ? undefined : errorMessage,
+      stack: process.env.NODE_ENV === 'production' ? undefined : errorStack
     });
   }
 } 
