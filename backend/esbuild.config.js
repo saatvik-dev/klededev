@@ -27,7 +27,10 @@ const commonOptions = {
     '@shared': path.resolve(__dirname, '../shared')
   },
   sourcemap: true,
-  minify: true
+  minify: true,
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  }
 };
 
 // Build main server
@@ -42,4 +45,7 @@ await build({
   ...commonOptions,
   entryPoints: ['api/index.ts'],
   outdir: 'dist/api',
+  banner: {
+    js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
+  }
 }); 
