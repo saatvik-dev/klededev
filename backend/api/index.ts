@@ -1,32 +1,17 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import { createServer } from '../server/index.js';
 import serverless from 'serverless-http';
 
-let app: any;
+// Create the Express app
+const app = express();
 
-/**
- * Create and configure the Express application for serverless environment
- */
-export default async function handler(req: Request, res: Response) {
-  try {
-    if (!app) {
-      console.log('Initializing serverless function...');
-      const { app: expressApp } = await createServer({ 
-        serverless: true
-      });
-      app = expressApp;
-    }
-    
-    return serverless(app)(req, res);
-  } catch (error) {
-    console.error('Serverless function error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: process.env.NODE_ENV === 'production' ? undefined : errorMessage,
-      stack: process.env.NODE_ENV === 'production' ? undefined : errorStack
-    });
-  }
-} 
+// Initialize the server
+createServer({ serverless: true }).then(({ app: serverApp }) => {
+  // Mount the server app
+  app.use('/', serverApp);
+}).catch(error => {
+  console.error('Failed to initialize server:', error);
+});
+
+// Export the serverless handler
+export default serverless(app); 
