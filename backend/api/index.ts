@@ -13,6 +13,10 @@ export default async function(req: any, res: any) {
       console.log('Initializing serverless function...');
       console.log('Current directory:', __dirname);
       console.log('Root directory:', path.resolve(__dirname, '..'));
+      console.log('Process cwd:', process.cwd());
+      
+      // Set the working directory to the backend folder
+      process.chdir(path.resolve(__dirname, '..'));
       
       const { app: expressApp } = await createServer({ 
         serverless: true

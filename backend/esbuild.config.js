@@ -32,6 +32,11 @@ const commonOptions = {
   outdir: 'dist',
   loader: {
     '.ts': 'ts'
+  },
+  resolveExtensions: ['.ts', '.js', '.json'],
+  mainFields: ['module', 'main'],
+  alias: {
+    '@shared': path.resolve(__dirname, '../shared')
   }
 };
 
