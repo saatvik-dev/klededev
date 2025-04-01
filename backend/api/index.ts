@@ -9,4 +9,4 @@ const app = express();
 app.use("/", serverApp);
 
 // Export the serverless handler
-export default serverless(app); 
+module.exports = serverless(app); 
