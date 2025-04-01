@@ -35,7 +35,7 @@ const authenticateAdmin = (req: Request, res: Response, next: Function) => {
  * @returns HTTP server instance if WebSocket is configured, otherwise null
  */
 export async function registerRoutes(app: Express): Promise<Server | null> {
-  // Health check endpoint
+  // Health check endpoint - always accessible
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
     });
   }
 
-  // Waitlist routes
+  // Waitlist routes - always accessible
   app.post("/api/waitlist", async (req, res) => {
     try {
       // Validate email
@@ -138,16 +138,18 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
     }
   });
 
-  // Admin routes
-  app.get("/api/admin/waitlist", authenticateAdmin, async (req, res) => {
-    try {
-      const entries = await storage.getAllWaitlistEntries();
-      res.json(entries);
-    } catch (error) {
-      console.error("Error fetching waitlist entries:", error);
-      res.status(500).json({ message: "Failed to fetch waitlist entries" });
-    }
-  });
+  // Admin routes - only in non-serverless environment
+  if (!process.env.VERCEL) {
+    app.get("/api/admin/waitlist", authenticateAdmin, async (req, res) => {
+      try {
+        const entries = await storage.getAllWaitlistEntries();
+        res.json(entries);
+      } catch (error) {
+        console.error("Error fetching waitlist entries:", error);
+        res.status(500).json({ message: "Failed to fetch waitlist entries" });
+      }
+    });
+  }
 
   // Send promotional email to all waitlist subscribers (admin only)
   app.post("/api/admin/send-promotional", authenticateAdmin, async (req, res) => {
@@ -218,12 +220,5 @@ export async function registerRoutes(app: Express): Promise<Server | null> {
     }
   });
 
-  // In Vercel serverless environment, return null instead of HTTP server
-  if (process.env.VERCEL) {
-    return null;
-  }
-  
-  // Create HTTP server for traditional environments
-  const httpServer = createServer(app);
-  return httpServer;
+  return null;
 }
