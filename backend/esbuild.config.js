@@ -4,13 +4,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-await build({
-  entryPoints: ['server/index.ts'],
+// Common build options
+const commonOptions = {
   bundle: true,
   platform: 'node',
   target: 'node18',
   format: 'esm',
-  outdir: 'dist',
   external: [
     'express',
     'cors',
@@ -21,11 +20,26 @@ await build({
     'passport',
     'express-session',
     'nodemailer',
-    'ws'
+    'ws',
+    'serverless-http'
   ],
   alias: {
     '@shared': path.resolve(__dirname, '../shared')
   },
   sourcemap: true,
   minify: true
+};
+
+// Build main server
+await build({
+  ...commonOptions,
+  entryPoints: ['server/index.ts'],
+  outdir: 'dist',
+});
+
+// Build serverless function
+await build({
+  ...commonOptions,
+  entryPoints: ['api/index.ts'],
+  outdir: 'dist/api',
 }); 
