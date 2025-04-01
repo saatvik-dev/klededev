@@ -55,7 +55,7 @@ await build({
       });
     }
   }],
-  include: ['api/**/*', 'server/**/*', 'shared/**/*'],
+  include: ['api/**/*', 'server/**/*', 'shared/**/*', 'server/db.ts'],
   outbase: '.',
   outdir: 'dist'
 }); 

@@ -30,6 +30,7 @@
         "includeFiles": [
           "backend/api/**/*",
           "backend/server/**/*",
+          "backend/server/db.ts",
           "backend/shared/**/*",
           "backend/package.json",
           "backend/tsconfig.json",
