@@ -28,16 +28,13 @@ const commonOptions = {
   define: {
     'process.env.NODE_ENV': '"production"'
   },
-  outbase: '.',
+  outbase: '..',
   outdir: 'dist',
   loader: {
     '.ts': 'ts'
   },
   resolveExtensions: ['.ts', '.js', '.json'],
-  mainFields: ['module', 'main'],
-  alias: {
-    '@shared': path.resolve(__dirname, '../shared')
-  }
+  mainFields: ['module', 'main']
 };
 
 // Build everything in one step to maintain proper module resolution
@@ -48,11 +45,14 @@ await build({
   banner: {
     js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
   },
-  include: [
-    'api/**/*',
-    'server/**/*',
-    '../shared/**/*'
-  ],
-  outbase: '.',
-  outdir: 'dist'
+  absWorkingDir: path.resolve(__dirname),
+  plugins: [{
+    name: 'alias',
+    setup(build) {
+      build.onResolve({ filter: /^@shared\// }, args => {
+        const relativePath = args.path.replace('@shared/', '../shared/');
+        return { path: path.resolve(__dirname, relativePath) };
+      });
+    }
+  }]
 }); 
