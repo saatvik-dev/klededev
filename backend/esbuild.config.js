@@ -23,9 +23,6 @@ const commonOptions = {
     'ws',
     'serverless-http'
   ],
-  alias: {
-    '@shared': path.resolve(__dirname, '../shared')
-  },
   sourcemap: true,
   minify: true,
   define: {
@@ -38,24 +35,12 @@ const commonOptions = {
   }
 };
 
-// Build serverless function separately
+// Build everything in one step to maintain proper module resolution
 await build({
   ...commonOptions,
   entryPoints: ['api/index.ts'],
-  outdir: 'dist/api',
-  bundle: true,
+  outdir: 'dist',
   banner: {
     js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
   }
-});
-
-// Build server files
-await build({
-  ...commonOptions,
-  entryPoints: [
-    'server/index.ts',
-    'server/db.ts',
-    '../shared/schema.ts'
-  ],
-  outdir: 'dist/server'
 }); 

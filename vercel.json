@@ -33,7 +33,8 @@
           "backend/api/**/*",
           "shared/**/*",
           "backend/package.json",
-          "backend/tsconfig.json"
+          "backend/tsconfig.json",
+          "backend/.env"
         ]
       }
     }
