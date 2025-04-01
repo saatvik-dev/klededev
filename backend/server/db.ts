@@ -1,57 +1,131 @@
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import * as dotenv from 'dotenv';
+import { users, waitlistEntries } from '@shared/schema';
 
-// Load environment variables
-dotenv.config();
-
-// Database connection configuration
-const connectionString = process.env.DATABASE_URL;
-
-// Create a connection pool optimized for serverless
+// Create a database pool for PostgreSQL
 let pool: Pool;
 
-if (connectionString) {
-  // Connection pooling settings for serverless environment
-  pool = new Pool({
-    connectionString,
-    max: 10, // Adjust based on expected load
-    idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-    connectionTimeoutMillis: 5000, // Timeout after 5 seconds
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
-  });
-} else {
-  console.error('DATABASE_URL environment variable is not set');
-  // In a serverless context, we should throw an error here
-  throw new Error('Database connection string not provided');
+// Initialize the database connection
+try {
+  // Check if DATABASE_URL is available (production/staging)
+  if (process.env.DATABASE_URL) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    });
+    console.log('Database connection initialized with connection string');
+  } else {
+    // Local development with individual connection parameters
+    pool = new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_NAME || 'klede',
+    });
+    console.log('Database connection initialized with individual parameters');
+  }
+} catch (error) {
+  console.error('Failed to initialize database connection:', error);
+  throw error;
 }
 
-// Create Drizzle ORM instance
+// Initialize Drizzle ORM with the database pool
 export const db = drizzle(pool);
 
-// Function to apply migrations (can be used during deployment)
+// Create tables if they don't exist
 export async function runMigrations() {
   try {
-    await migrate(db, { migrationsFolder: './drizzle' });
-    console.log('Migrations completed successfully');
+    // Check if users table exists
+    const usersExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `);
+
+    // Check if waitlist_entries table exists
+    const waitlistExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'waitlist_entries'
+      );
+    `);
+
+    // Create the tables using Drizzle's schema definitions if they don't exist
+    if (!usersExists.rows[0].exists) {
+      console.log('Creating users table...');
+      await db.execute(sql`
+        CREATE TABLE users (
+          id SERIAL PRIMARY KEY,
+          username TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    }
+
+    if (!waitlistExists.rows[0].exists) {
+      console.log('Creating waitlist_entries table...');
+      await db.execute(sql`
+        CREATE TABLE waitlist_entries (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          name TEXT,
+          referral_source TEXT,
+          has_received_welcome_email BOOLEAN NOT NULL DEFAULT FALSE,
+          subscriber_count INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    }
+
+    console.log('Database schema check completed.');
+
+    // Create a default admin user if it doesn't exist
+    const adminExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM users 
+        WHERE username = 'admin'
+      );
+    `);
+
+    if (!adminExists.rows[0].exists) {
+      console.log('Creating default admin user...');
+      await db.insert(users).values({
+        username: 'admin',
+        password: 'admin', // In production, this should be hashed
+        isAdmin: true,
+      });
+    }
+
+    return true;
   } catch (error) {
-    console.error('Error applying migrations:', error);
-    throw error;
+    console.error('Error running migrations:', error);
+    return false;
   }
 }
 
-// Function to test database connection
+// Test the database connection
 export async function testConnection() {
   try {
-    const result = await pool.query('SELECT 1 as test');
-    if (result.rows[0].test === 1) {
-      console.log('Database connection successful');
-      return true;
-    }
-    return false;
+    const result = await db.execute(sql`SELECT NOW();`);
+    console.log('Database connection test successful:', result.rows[0].now);
+    return true;
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('Database connection test failed:', error);
     return false;
   }
+}
+
+// Helper to generate SQL queries
+function sql(strings: TemplateStringsArray, ...values: any[]) {
+  return {
+    text: strings.reduce((acc, str, i) => acc + str + (i < values.length ? '$' + (i + 1) : ''), ''),
+    values,
+  };
 }

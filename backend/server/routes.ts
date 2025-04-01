@@ -1,14 +1,12 @@
-import { Express, Request, Response } from "express";
-import passport from "passport";
-import { Server, createServer } from "http";
-import { emailSchema, insertWaitlistSchema } from "@shared/schema";
-import { storage } from "./storage";
-import { ZodError } from "zod";
-import { fromZodError } from "zod-validation-error";
-import { emailService } from "./emails/emailService";
+import { Express, Request, Response } from 'express';
+import passport from 'passport';
+import { createServer as createHttpServer, Server as HttpServer } from 'http';
+import { emailSchema, insertWaitlistSchema } from '@shared/schema';
+import { storage } from './storage';
+import { emailService } from './emails/emailService';
 
-// Extend Express Request type to include session data
-declare module "express-session" {
+// Add session data type
+declare module 'express-session' {
   interface SessionData {
     isAdmin?: boolean;
   }
@@ -18,10 +16,10 @@ declare module "express-session" {
  * Middleware to authenticate admin users
  */
 const authenticateAdmin = (req: Request, res: Response, next: Function) => {
-  if (req.session.isAdmin) {
+  if (req.isAuthenticated() && req.user && (req.user as any).isAdmin) {
     return next();
   }
-  return res.status(401).json({ error: "Unauthorized" });
+  res.status(401).json({ message: 'Unauthorized' });
 };
 
 /**
@@ -29,196 +27,158 @@ const authenticateAdmin = (req: Request, res: Response, next: Function) => {
  * @param app Express application
  * @returns HTTP server instance if WebSocket is configured, otherwise null
  */
-export async function registerRoutes(app: Express): Promise<Server | null> {
-  // Health check endpoint
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
+export async function registerRoutes(app: Express): Promise<HttpServer | null> {
+  let httpServer: HttpServer | null = null;
+
+  // Create HTTP server for potential WebSocket support
+  httpServer = createHttpServer(app);
 
   // Authentication routes
-  
-  // Admin login endpoint
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post('/api/login', (req, res, next) => {
     passport.authenticate("local", (err: Error, user: any, info: any) => {
       if (err) {
         return next(err);
       }
-      
       if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ message: info.message || 'Authentication failed' });
       }
-      
       req.logIn(user, (err) => {
         if (err) {
           return next(err);
         }
-        
-        // Set isAdmin flag in session
-        req.session.isAdmin = true;
-        
-        return res.json({ success: true });
+        req.session.isAdmin = user.isAdmin;
+        return res.json({ message: 'Authentication successful', user: { id: user.id, username: user.username, isAdmin: user.isAdmin } });
       });
     })(req, res, next);
   });
-  
-  // Logout endpoint
-  app.post("/api/auth/logout", (req, res) => {
+
+  app.post('/api/logout', (req, res) => {
     req.logout((err) => {
       if (err) {
-        return res.status(500).json({ error: "Logout failed" });
+        return res.status(500).json({ message: 'Error logging out' });
       }
-      
-      // Clear isAdmin flag
-      req.session.isAdmin = false;
-      
-      // Destroy session
-      req.session.destroy((err) => {
-        if (err) {
-          return res.status(500).json({ error: "Session destruction failed" });
-        }
-        res.json({ success: true });
-      });
+      res.json({ message: 'Logout successful' });
     });
-  });
-  
-  // Authentication check endpoint
-  app.get("/api/auth/check", (req, res) => {
-    if (req.session.isAdmin) {
-      return res.json({ isAuthenticated: true });
-    }
-    return res.json({ isAuthenticated: false });
   });
 
   // Waitlist routes
-  
-  // Add email to waitlist
-  app.post("/api/waitlist", async (req, res) => {
+  app.post('/api/waitlist', async (req, res) => {
     try {
-      // Validate request body against schema
-      const validatedData = emailSchema.parse(req.body);
+      // Validate request body
+      const parsedData = emailSchema.safeParse(req.body);
       
-      // Check if email already exists in waitlist
-      const existingEntry = await storage.getWaitlistEntryByEmail(validatedData.email);
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: 'Invalid request data',
+          errors: parsedData.error.format() 
+        });
+      }
+      
+      const { email } = parsedData.data;
+      
+      // Check if email already exists
+      const existingEntry = await storage.getWaitlistEntryByEmail(email);
       
       if (existingEntry) {
-        return res.status(409).json({ error: "Email already in waitlist" });
+        return res.status(409).json({ message: 'Email already registered' });
       }
       
-      // Add to waitlist
-      const waitlistEntry = await storage.addToWaitlist({ email: validatedData.email });
-      
-      // Send welcome email in the background
-      emailService.sendWelcomeEmail(validatedData.email).catch(err => {
-        console.error("Failed to send welcome email:", err);
+      // Create waitlist entry with validated data
+      const waitlistData = insertWaitlistSchema.parse({
+        email,
+        name: req.body.name || null,
+        referralSource: req.body.referralSource || null,
+        hasReceivedWelcomeEmail: false,
+        subscriberCount: 0
       });
       
-      return res.status(201).json({ success: true, data: waitlistEntry });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ error: validationError.message });
-      }
+      const newEntry = await storage.addToWaitlist(waitlistData);
       
-      console.error("Error adding to waitlist:", error);
-      return res.status(500).json({ error: "Failed to add to waitlist" });
+      // Send welcome email asynchronously
+      emailService.sendWelcomeEmail(email).catch(err => {
+        console.error('Failed to send welcome email:', err);
+      });
+      
+      // Return success response
+      res.status(201).json({
+        message: 'Successfully added to waitlist',
+        entry: {
+          id: newEntry.id,
+          email: newEntry.email,
+          createdAt: newEntry.createdAt
+        }
+      });
+    } catch (error) {
+      console.error('Error adding to waitlist:', error);
+      res.status(500).json({ message: 'Server error' });
     }
   });
-  
-  // List all waitlist entries (admin only)
-  app.get("/api/waitlist", authenticateAdmin, async (req, res) => {
+
+  // Admin routes (protected)
+  app.get('/api/admin/waitlist', authenticateAdmin, async (req, res) => {
     try {
       const entries = await storage.getAllWaitlistEntries();
-      return res.json({ data: entries });
+      res.json(entries);
     } catch (error) {
-      console.error("Error fetching waitlist:", error);
-      return res.status(500).json({ error: "Failed to fetch waitlist entries" });
+      console.error('Error fetching waitlist entries:', error);
+      res.status(500).json({ message: 'Server error' });
     }
   });
-  
-  // Delete waitlist entry (admin only)
-  app.delete("/api/waitlist/:id", authenticateAdmin, async (req, res) => {
+
+  app.delete('/api/admin/waitlist/:id', authenticateAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
       
       if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid ID format" });
+        return res.status(400).json({ message: 'Invalid ID format' });
       }
       
       const success = await storage.deleteWaitlistEntry(id);
       
       if (!success) {
-        return res.status(404).json({ error: "Entry not found" });
+        return res.status(404).json({ message: 'Entry not found' });
       }
       
-      return res.json({ success: true });
+      res.json({ message: 'Entry deleted successfully' });
     } catch (error) {
-      console.error("Error deleting waitlist entry:", error);
-      return res.status(500).json({ error: "Failed to delete waitlist entry" });
-    }
-  });
-  
-  // Email routes (admin only)
-  
-  // Send promotional email to all waitlist subscribers
-  app.post("/api/email/promotional", authenticateAdmin, async (req, res) => {
-    try {
-      const { message } = req.body;
-      
-      // Get all waitlist entries
-      const entries = await storage.getAllWaitlistEntries();
-      
-      if (entries.length === 0) {
-        return res.status(404).json({ error: "No waitlist subscribers found" });
-      }
-      
-      // Send emails in the background
-      const emailPromises = entries.map(entry => 
-        emailService.sendPromotionalEmail(entry.email, message)
-      );
-      
-      Promise.all(emailPromises).catch(err => {
-        console.error("Error sending some promotional emails:", err);
-      });
-      
-      return res.json({
-        success: true,
-        message: `Sending promotional emails to ${entries.length} subscribers`
-      });
-    } catch (error) {
-      console.error("Error sending promotional emails:", error);
-      return res.status(500).json({ error: "Failed to send promotional emails" });
-    }
-  });
-  
-  // Send launch announcement to all waitlist subscribers
-  app.post("/api/email/launch", authenticateAdmin, async (req, res) => {
-    try {
-      // Get all waitlist entries
-      const entries = await storage.getAllWaitlistEntries();
-      
-      if (entries.length === 0) {
-        return res.status(404).json({ error: "No waitlist subscribers found" });
-      }
-      
-      // Send emails in the background
-      const emailPromises = entries.map(entry => 
-        emailService.sendLaunchEmail(entry.email)
-      );
-      
-      Promise.all(emailPromises).catch(err => {
-        console.error("Error sending some launch emails:", err);
-      });
-      
-      return res.json({
-        success: true,
-        message: `Sending launch announcement to ${entries.length} subscribers`
-      });
-    } catch (error) {
-      console.error("Error sending launch announcements:", error);
-      return res.status(500).json({ error: "Failed to send launch announcements" });
+      console.error('Error deleting waitlist entry:', error);
+      res.status(500).json({ message: 'Server error' });
     }
   });
 
-  // No WebSocket server needed for this application
-  return null;
+  // Email management routes (protected)
+  app.post('/api/admin/send-promotional', authenticateAdmin, async (req, res) => {
+    try {
+      const { email, message } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+      
+      await emailService.sendPromotionalEmail(email, message);
+      res.json({ message: 'Promotional email sent successfully' });
+    } catch (error) {
+      console.error('Error sending promotional email:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  app.post('/api/admin/send-launch', authenticateAdmin, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+      
+      await emailService.sendLaunchEmail(email);
+      res.json({ message: 'Launch email sent successfully' });
+    } catch (error) {
+      console.error('Error sending launch email:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  // Return the HTTP server instance
+  return httpServer;
 }

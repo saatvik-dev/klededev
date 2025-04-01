@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
-import * as templates from "./templates";
+import nodemailer from 'nodemailer';
+import { generateWelcomeEmail, generatePromotionalEmail, generateLaunchEmail } from './templates';
 
 /**
  * Email Service for sending various types of emails
@@ -9,10 +9,12 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
   private initialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private fromAddress: string = '';
 
   constructor() {
-    // We'll initialize lazily when needed
-    this.transporter = null as any;
+    // Initialize the service when needed (lazy loading)
+    this.transporter = {} as nodemailer.Transporter;
+    this.initializationPromise = null;
   }
 
   /**
@@ -20,19 +22,15 @@ export class EmailService {
    * If no email configuration is provided, it creates a test account using Ethereal
    */
   async initialize(): Promise<void> {
-    // Only initialize once
     if (this.initialized) {
       return;
     }
 
-    // If initialization is already in progress, wait for it
-    if (this.initializationPromise) {
-      return this.initializationPromise;
+    if (!this.initializationPromise) {
+      this.initializationPromise = this._initialize();
     }
 
-    this.initializationPromise = this._initialize();
-    await this.initializationPromise;
-    this.initializationPromise = null;
+    return this.initializationPromise;
   }
 
   /**
@@ -40,32 +38,32 @@ export class EmailService {
    */
   private async _initialize(): Promise<void> {
     try {
-      // Check if we have SMTP configuration
+      // Check if email configuration is provided
       if (
         process.env.EMAIL_HOST &&
         process.env.EMAIL_PORT &&
         process.env.EMAIL_USER &&
         process.env.EMAIL_PASS
       ) {
-        // Create a real SMTP transporter
+        // Use configured SMTP server
         this.transporter = nodemailer.createTransport({
           host: process.env.EMAIL_HOST,
-          port: parseInt(process.env.EMAIL_PORT),
-          secure: process.env.EMAIL_SECURE === "true",
+          port: parseInt(process.env.EMAIL_PORT, 10),
+          secure: parseInt(process.env.EMAIL_PORT, 10) === 465, // true for 465, false for other ports
           auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
           },
         });
-
-        console.log("Email service initialized with provided SMTP configuration");
+        
+        this.fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+        console.log('Email service initialized with configured SMTP server');
       } else {
-        // Create a test account using Ethereal for development
+        // Create a test account using Ethereal for development/testing
         const testAccount = await nodemailer.createTestAccount();
 
-        // Create an Ethereal transporter for testing
         this.transporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
+          host: 'smtp.ethereal.email',
           port: 587,
           secure: false,
           auth: {
@@ -73,17 +71,16 @@ export class EmailService {
             pass: testAccount.pass,
           },
         });
-
-        console.log("Email service initialized with Ethereal test account");
-        console.log("Test account credentials:", {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        });
+        
+        this.fromAddress = testAccount.user;
+        console.log('Email service initialized with Ethereal test account');
+        console.log('Ethereal account:', testAccount.user);
+        console.log('View emails at: https://ethereal.email');
       }
 
       this.initialized = true;
     } catch (error) {
-      console.error("Failed to initialize email service:", error);
+      console.error('Failed to initialize email service:', error);
       throw error;
     }
   }
@@ -95,29 +92,31 @@ export class EmailService {
    * @param html Email body in HTML format
    */
   async sendEmail(to: string, subject: string, html: string): Promise<any> {
-    // Make sure the service is initialized
     if (!this.initialized) {
       await this.initialize();
     }
 
-    // Prepare the email
     const mailOptions = {
-      from: process.env.EMAIL_FROM || '"Klede Waitlist" <no-reply@klede.com>',
+      from: `"Klede Collection" <${this.fromAddress}>`,
       to,
       subject,
       html,
     };
 
-    // Send the email
-    const info = await this.transporter.sendMail(mailOptions);
-
-    // If using Ethereal, log the preview URL
-    if (info.messageId && info.previewURL) {
-      console.log("Email sent:", info.messageId);
-      console.log("Preview URL:", info.previewURL);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Email sent:', info.messageId);
+      
+      // If using Ethereal, log the URL where the email can be viewed
+      if (info.messageId && info.messageId.includes('ethereal')) {
+        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      }
+      
+      return info;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
     }
-
-    return info;
   }
 
   /**
@@ -125,7 +124,7 @@ export class EmailService {
    * @param email Recipient email address
    */
   async sendWelcomeEmail(email: string): Promise<any> {
-    const { subject, html } = templates.generateWelcomeEmail(email);
+    const { subject, html } = generateWelcomeEmail(email);
     return this.sendEmail(email, subject, html);
   }
 
@@ -135,7 +134,7 @@ export class EmailService {
    * @param customMessage Optional custom message to include in the email
    */
   async sendPromotionalEmail(email: string, customMessage?: string): Promise<any> {
-    const { subject, html } = templates.generatePromotionalEmail(email, customMessage);
+    const { subject, html } = generatePromotionalEmail(email, customMessage);
     return this.sendEmail(email, subject, html);
   }
 
@@ -144,10 +143,10 @@ export class EmailService {
    * @param email Recipient email address
    */
   async sendLaunchEmail(email: string): Promise<any> {
-    const { subject, html } = templates.generateLaunchEmail(email);
+    const { subject, html } = generateLaunchEmail(email);
     return this.sendEmail(email, subject, html);
   }
 }
 
-// Create a singleton instance
+// Export a singleton instance
 export const emailService = new EmailService();

@@ -1,107 +1,126 @@
-import { QueryClient } from '@tanstack/react-query';
+import { 
+  QueryClient,
+  QueryKey,
+  QueryFunction
+} from '@tanstack/react-query';
 
 /**
- * Helper function to throw an error if the response is not OK
+ * Helper function to check if a response is OK and throw an error if not
  */
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const errorText = await res.text();
-    let errorData: { error: string; message?: string } = { error: 'Unknown error' };
+    // Try to parse error from response
+    let errorMessage = `Server responded with ${res.status}: ${res.statusText}`;
+    let errorData = null;
+    
     try {
-      errorData = JSON.parse(errorText);
+      errorData = await res.json();
+      if (errorData && errorData.message) {
+        errorMessage = errorData.message;
+      }
     } catch (e) {
-      errorData.error = errorText || 'Server error';
+      // Unable to parse JSON, use status text
     }
-    throw new Error(errorData.message || errorData.error);
+    
+    const error = new Error(errorMessage) as Error & { status?: number, data?: any };
+    error.status = res.status;
+    error.data = errorData;
+    throw error;
   }
 }
 
 /**
  * Helper function to get the correct API URL for both development and production
- * In development, API calls go directly to the path
- * In production, API calls go to the configured backend URL (Vercel) for API requests
- * and to the regular URL for non-API requests
  */
 function getApiUrl(path: string): string {
-  const apiUrl = import.meta.env.VITE_API_URL;
+  // Remove leading slash if present
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   
-  // In development or if no API URL is configured, use the same origin
-  if (!apiUrl) {
-    return path;
+  // In production, use the environment variable for the API URL
+  if (import.meta.env.PROD && import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL}/${cleanPath}`;
   }
   
-  // In production, use the configured API URL for API requests
-  if (path.startsWith('/api/')) {
-    return `${apiUrl}${path}`;
-  }
-  
-  // For non-API requests, use the same origin
-  return path;
+  // In development, just use the path (proxied by Vite)
+  return `/${cleanPath}`;
 }
 
 /**
- * General-purpose API request function
+ * Generic API request function to handle API calls
+ * 
+ * @param path - The API path to call (with or without leading slash)
+ * @param options - Fetch options (method, headers, body)
+ * @returns The parsed response data
  */
-export async function apiRequest<T = any>(
+export async function apiRequest(
   path: string,
   options: RequestInit = {}
-): Promise<T> {
+): Promise<any> {
   const url = getApiUrl(path);
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include',
-  });
-
-  await throwIfResNotOk(res);
-
-  if (res.status === 204) {
-    return {} as T; // No content
+  
+  // Setup default headers for JSON
+  const headers = new Headers(options.headers || {});
+  
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
   }
-
-  return res.json();
+  
+  // Combine provided options with our defaults
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include', // Send cookies for authentication
+  };
+  
+  // Convert body to JSON string if it's an object
+  if (
+    fetchOptions.body &&
+    typeof fetchOptions.body === 'object' &&
+    !(fetchOptions.body instanceof FormData) &&
+    !(fetchOptions.body instanceof URLSearchParams)
+  ) {
+    fetchOptions.body = JSON.stringify(fetchOptions.body);
+  }
+  
+  const response = await fetch(url, fetchOptions);
+  await throwIfResNotOk(response);
+  
+  // Return parsed JSON or null if no content
+  if (response.status === 204) {
+    return null;
+  }
+  
+  return response.json();
 }
 
 /**
- * Type for handling 401 (Unauthorized) errors
+ * Create a query function with configurable behavior on 401 errors
  */
-type UnauthorizedBehavior = "returnNull" | "throw";
-
-/**
- * Creates a query function with specific options
- */
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => (key: string) => Promise<T | null> = (options) => {
-  return async (path: string) => {
+export const getQueryFn = <T>(options: {
+  on401: 'returnNull' | 'throw',
+}): QueryFunction<T, QueryKey> => {
+  return async ({ queryKey }) => {
     try {
-      return await apiRequest<T>(path);
-    } catch (e) {
-      // Check if it's a 401 error
-      if (
-        e instanceof Error &&
-        e.message.toLowerCase().includes('unauthorized')
-      ) {
-        if (options.on401 === 'returnNull') {
-          return null;
-        }
-        throw e;
+      const [path] = queryKey as string[];
+      return await apiRequest(path);
+    } catch (error: any) {
+      if (error.status === 401 && options.on401 === 'returnNull') {
+        return null as T;
       }
-      throw e;
+      throw error;
     }
   };
 };
 
 /**
- * TanStack Query client configuration
+ * Configure the query client with default options
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
       queryFn: getQueryFn({ on401: 'throw' }),
     },
   },
