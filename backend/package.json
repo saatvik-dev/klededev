@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "node esbuild.config.js",
+    "build": "node esbuild.config.js && cp -r server dist/",
     "start": "node dist/index.js",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio"
