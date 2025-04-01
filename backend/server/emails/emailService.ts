@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { templates } from "./templates.js";
+import { generateWelcomeEmail, generatePromotionalEmail, generateLaunchEmail } from "./templates.js";
 
 /**
  * Email Service for sending various types of emails
@@ -125,7 +125,7 @@ export class EmailService {
    * @param email Recipient email address
    */
   async sendWelcomeEmail(email: string): Promise<any> {
-    const { subject, html } = templates.generateWelcomeEmail(email);
+    const { subject, html } = generateWelcomeEmail(email);
     return this.sendEmail(email, subject, html);
   }
 
@@ -135,7 +135,7 @@ export class EmailService {
    * @param customMessage Optional custom message to include in the email
    */
   async sendPromotionalEmail(email: string, customMessage?: string): Promise<any> {
-    const { subject, html } = templates.generatePromotionalEmail(email, customMessage);
+    const { subject, html } = generatePromotionalEmail(email, customMessage);
     return this.sendEmail(email, subject, html);
   }
 
@@ -144,7 +144,7 @@ export class EmailService {
    * @param email Recipient email address
    */
   async sendLaunchEmail(email: string): Promise<any> {
-    const { subject, html } = templates.generateLaunchEmail(email);
+    const { subject, html } = generateLaunchEmail(email);
     return this.sendEmail(email, subject, html);
   }
 }

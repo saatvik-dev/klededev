@@ -12,7 +12,8 @@
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["shared/*"]
-    }
+    },
+    "types": ["node"]
   },
   "include": ["api/**/*", "server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist"]
