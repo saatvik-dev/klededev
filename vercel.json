@@ -28,8 +28,13 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
-          "backend/**/*",
-          "shared/**/*"
+          "backend/api/**/*",
+          "backend/server/**/*",
+          "backend/shared/**/*",
+          "backend/package.json",
+          "backend/tsconfig.json",
+          "backend/.env",
+          "backend/esbuild.config.js"
         ],
         "buildCommand": "cd backend && npm install && npm run build",
         "outputDirectory": "dist"

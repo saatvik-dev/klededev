@@ -28,7 +28,7 @@ const commonOptions = {
   define: {
     'process.env.NODE_ENV': '"production"'
   },
-  outbase: '..',
+  outbase: '.',
   outdir: 'dist',
   loader: {
     '.ts': 'ts'
@@ -50,9 +50,10 @@ await build({
     name: 'alias',
     setup(build) {
       build.onResolve({ filter: /^@shared\// }, args => {
-        const relativePath = args.path.replace('@shared/', '../shared/');
+        const relativePath = args.path.replace('@shared/', 'shared/');
         return { path: path.resolve(__dirname, relativePath) };
       });
     }
-  }]
+  }],
+  include: ['api/**/*', 'server/**/*', 'shared/**/*']
 }); 

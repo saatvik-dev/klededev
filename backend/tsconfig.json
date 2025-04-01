@@ -7,12 +7,12 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "..",
-    "baseUrl": "..",
+    "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
       "@shared/*": ["shared/*"]
     }
   },
-  "include": ["**/*", "../shared/**/*"],
+  "include": ["**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist"]
 }
