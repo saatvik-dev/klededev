@@ -47,5 +47,12 @@ await build({
   outdir: 'dist',
   banner: {
     js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
-  }
+  },
+  include: [
+    'api/**/*',
+    'server/**/*',
+    '../shared/**/*'
+  ],
+  outbase: '.',
+  outdir: 'dist'
 }); 

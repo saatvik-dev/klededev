@@ -35,7 +35,8 @@
           "backend/package.json",
           "backend/tsconfig.json",
           "backend/.env",
-          "backend/esbuild.config.js"
+          "backend/esbuild.config.js",
+          "shared/package.json"
         ],
         "buildCommand": "cd backend && npm install && npm run build",
         "outputDirectory": "dist"
