@@ -1,61 +1,56 @@
 #!/bin/bash
+
+# Script to prepare files for Netlify deployment
+
+# Ensure script fails on any command error
 set -e
 
-echo "Building for Netlify deployment..."
+echo "Preparing frontend for Netlify deployment..."
 
-# Install dependencies
-echo "Installing dependencies..."
-npm ci
+# Create shared directory in the frontend folder if it doesn't exist
+mkdir -p frontend/shared
 
-# Install specific dependencies that might be causing build issues
-echo "Ensuring build dependencies are installed..."
-npm install @babel/preset-typescript lightningcss --save-dev
+# Copy the schema.ts file to the frontend/shared directory
+echo "Copying shared schema to frontend/shared..."
+cp shared/schema.ts frontend/shared/
 
-# Build the client
-echo "Building client..."
-npm run build
-
-# Create the necessary directories for Netlify functions
-echo "Preparing Netlify functions directories..."
-mkdir -p .netlify/functions
-mkdir -p netlify/functions
-
-# Copy any necessary files for serverless functions
-echo "Processing Netlify functions..."
-# Rename any .js files in netlify/functions to .cjs to ensure proper CommonJS handling
-for file in netlify/functions/*.js; do
-  if [ -f "$file" ]; then
-    echo "Converting $file to CommonJS (.cjs) format"
-    base_name=$(basename "$file" .js)
-    mv "$file" "netlify/functions/${base_name}.cjs"
-  fi
-done
-
-# Make sure we don't have any incompatible ESM/CJS mix
-echo "Checking for API functions..."
-if [ -f "netlify/functions/api.ts" ]; then
-  echo "Backing up api.ts to avoid ESM/CJS conflicts"
-  mv netlify/functions/api.ts netlify/functions/api.ts.backup
+# Check if package.json exists in frontend folder
+if [ ! -f frontend/package.json ]; then
+  echo "package.json already created in frontend folder"
 fi
 
-# Attempt to run database migrations if DATABASE_URL is set
-if [ -n "$DATABASE_URL" ]; then
-  echo "Database URL found, attempting to run migrations..."
-  npx drizzle-kit push
+# Check if environment variables file exists
+if [ ! -f frontend/.env ]; then
+  echo "Creating .env template in frontend folder..."
   
-  if [ $? -eq 0 ]; then
-    echo "✅ Database migrations completed successfully"
-  else
-    echo "⚠️ Database migrations failed, you will need to run them manually"
-    echo "   After deployment, use: netlify functions:invoke db-migrate --no-identity"
-  fi
-else
-  echo "No DATABASE_URL found, skipping migrations"
-  echo "You will need to set DATABASE_URL in Netlify environment variables"
+  # Create .env template
+  cat > frontend/.env << EOF
+# API URL (required for production)
+VITE_API_URL=https://your-backend.vercel.app
+EOF
 fi
 
-echo "Build completed successfully!"
-echo "To deploy to Netlify, use:"
-echo "  netlify deploy --prod"
-echo " "
-echo "Remember to set the DATABASE_URL and SESSION_SECRET in Netlify environment variables."
+# Make sure netlify.toml exists
+if [ ! -f frontend/netlify.toml ]; then
+  echo "Creating netlify.toml in frontend folder..."
+  
+  cat > frontend/netlify.toml << EOF
+[build]
+  base = "frontend"
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://klede-backend.vercel.app/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+EOF
+fi
+
+echo "Frontend preparation for Netlify completed!"
