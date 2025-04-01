@@ -28,10 +28,10 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
-          "shared/**",
-          "backend/dist/**",
-          "backend/server/**",
-          "backend/shared/**"
+          "backend/dist/**/*",
+          "backend/server/**/*",
+          "backend/shared/**/*",
+          "shared/**/*"
         ]
       }
     }

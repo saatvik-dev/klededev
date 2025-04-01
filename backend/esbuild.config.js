@@ -35,32 +35,16 @@ const commonOptions = {
   outdir: 'dist'
 };
 
-// Build shared schema
+// Build all files in one go
 await build({
   ...commonOptions,
-  entryPoints: ['shared/schema.ts'],
-  outdir: 'dist/shared'
-});
-
-// Build database
-await build({
-  ...commonOptions,
-  entryPoints: ['server/db.ts'],
-  outdir: 'dist/server'
-});
-
-// Build main server
-await build({
-  ...commonOptions,
-  entryPoints: ['server/index.ts'],
-  outdir: 'dist/server'
-});
-
-// Build serverless function
-await build({
-  ...commonOptions,
-  entryPoints: ['api/index.ts'],
-  outdir: 'dist/api',
+  entryPoints: [
+    'api/index.ts',
+    'server/index.ts',
+    'server/db.ts',
+    'shared/schema.ts'
+  ],
+  outdir: 'dist',
   banner: {
     js: "import { createRequire } from 'module';const require = createRequire(import.meta.url);"
   }
