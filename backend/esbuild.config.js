@@ -30,14 +30,30 @@ const commonOptions = {
   minify: true,
   define: {
     'process.env.NODE_ENV': '"production"'
-  }
+  },
+  outbase: '.',
+  outdir: 'dist'
 };
+
+// Build shared schema
+await build({
+  ...commonOptions,
+  entryPoints: ['shared/schema.ts'],
+  outdir: 'dist/shared'
+});
+
+// Build database
+await build({
+  ...commonOptions,
+  entryPoints: ['server/db.ts'],
+  outdir: 'dist/server'
+});
 
 // Build main server
 await build({
   ...commonOptions,
   entryPoints: ['server/index.ts'],
-  outdir: 'dist',
+  outdir: 'dist/server'
 });
 
 // Build serverless function

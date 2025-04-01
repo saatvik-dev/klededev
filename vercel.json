@@ -27,7 +27,12 @@
       "src": "backend/api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["shared/**", "backend/dist/**"]
+        "includeFiles": [
+          "shared/**",
+          "backend/dist/**",
+          "backend/server/**",
+          "backend/shared/**"
+        ]
       }
     }
   ],

@@ -4,10 +4,18 @@ import serverless from 'serverless-http';
 let app: any;
 
 export default async function(req: any, res: any) {
-  if (!app) {
-    const { app: expressApp } = await createServer({ serverless: true });
-    app = expressApp;
+  try {
+    if (!app) {
+      const { app: expressApp } = await createServer({ serverless: true });
+      app = expressApp;
+    }
+    
+    return serverless(app)(req, res);
+  } catch (error) {
+    console.error('Serverless function error:', error);
+    return res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-  
-  return serverless(app)(req, res);
 } 
