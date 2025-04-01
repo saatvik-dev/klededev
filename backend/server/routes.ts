@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import passport from "passport";
 import { Server, createServer } from "http";
-import { emailSchema, insertWaitlistSchema } from "../../shared/schema.js";
+import { emailSchema, insertWaitlistSchema } from "@shared/schema.js";
 import { storage } from "./storage.js";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
