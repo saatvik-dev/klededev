@@ -1,9 +1,6 @@
 import express, { Request, Response } from 'express';
 import { createServer } from '../server/index.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Create and configure the Express application for serverless environment
@@ -12,7 +9,7 @@ export default async function handler(req: Request, res: Response) {
   try {
     const { app } = await createServer({ 
       serverless: true,
-      rootDir: path.resolve(process.cwd(), 'backend')
+      rootDir: process.cwd()
     });
     
     return app(req, res);

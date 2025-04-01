@@ -13,6 +13,11 @@ import { storage } from './storage.js';
 // Load environment variables
 dotenv.config();
 
+interface ServerOptions {
+  serverless?: boolean;
+  rootDir?: string;
+}
+
 /**
  * Create and configure the Express application
  */
@@ -105,7 +110,7 @@ function createExpressApp() {
  * Create and start the server
  * @param options Options for server creation
  */
-export async function createServer(options = { serverless: false }) {
+export async function createServer(options: ServerOptions = { serverless: false }) {
   const app = createExpressApp();
   
   // Register API routes
